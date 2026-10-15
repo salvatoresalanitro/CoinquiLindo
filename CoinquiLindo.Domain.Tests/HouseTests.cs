@@ -1,4 +1,7 @@
-﻿namespace CoinquiLindo.Domain.Tests
+﻿using CoinquiLindo.Domain.Entities;
+using FluentAssertions;
+
+namespace CoinquiLindo.Domain.Tests
 {
     public class HouseTests
     {
@@ -14,7 +17,7 @@
 
             //Assert
             house.Tenants.Should().ContainSingle();
-            house.Tenants.First.Name.Should().Be("Salvo");
+            house.Tenants.First().Name.Should().Be("Salvo");
         }
     }
 }
