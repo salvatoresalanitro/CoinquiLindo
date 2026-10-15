@@ -1,8 +1,10 @@
-﻿using CoinquiLindo.Domain.Entities;
+﻿using CoinquiLindo.Application.Houses.Commands;
+using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Repositories;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ReceivedExtensions;
+using NSubstitute.ReturnsExtensions;
 
 namespace Coinquilindo.Application.Tests
 {
@@ -22,7 +24,7 @@ namespace Coinquilindo.Application.Tests
         {
             // Arrange
             var houseId = Guid.NewGuid();
-            var command = new AddTenantToHouseCommandHandler(houseId, "Salvo");
+            var command = new AddTenantToHouseCommand(houseId, "Salvo");
             var existingHouse = new House("Casa studenti");
 
             _mockHouseRepository.GetByIdAsync(houseId, Arg.Any<CancellationToken>()).Returns(existingHouse);
