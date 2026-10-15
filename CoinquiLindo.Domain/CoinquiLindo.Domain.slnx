@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CoinquiLindo.Domain.Tests/CoinquiLindo.Domain.Tests.csproj" />
+  <Project Path="CoinquiLindo.Domain/CoinquiLindo.Domain.csproj" />
+</Solution>
