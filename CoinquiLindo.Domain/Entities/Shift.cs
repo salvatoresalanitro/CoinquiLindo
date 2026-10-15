@@ -9,12 +9,15 @@
         public DateTime EndDate { get; private set; }
 
         private readonly List<ShiftChecklistItem> _checklist = new();
+        private readonly List<Report> _reports = new();
+
+        public IReadOnlyCollection<Report> Reports => _reports.AsReadOnly();
         public IReadOnlyCollection<ShiftChecklistItem> Checklist => _checklist.AsReadOnly();
 
         public Shift(Tenant assignedTenant, Room assignedRoom, DateTime startDate, DateTime endDate)
         {
-            ArgumentNullException.ThrowIfNull(assignedTenant);
-            ArgumentNullException.ThrowIfNull(assignedRoom);
+            ArgumentNullException.ThrowIfNull(assignedTenant, nameof(assignedTenant));
+            ArgumentNullException.ThrowIfNull(assignedRoom, nameof(assignedRoom));
 
             if (endDate <= startDate)
             {
@@ -43,6 +46,18 @@
             }
 
             item.MarkAsCompleted();
+        }
+
+        public void AddReport(Report report)
+        {
+            ArgumentNullException.ThrowIfNull(report, nameof(report));
+
+            if(report.Reporter.Id == AssignedTenant.Id)
+            {
+                throw new InvalidOperationException("You cannot add a report for yourself.");
+            }
+
+            _reports.Add(report);
         }
 
         public bool IsShiftFullyCompleted => _checklist.All(c => c.IsCompleted);
