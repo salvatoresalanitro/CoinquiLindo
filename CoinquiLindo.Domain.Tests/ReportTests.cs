@@ -1,4 +1,5 @@
 ﻿using CoinquiLindo.Domain.Entities;
+using FluentAssertions;
 
 namespace CoinquiLindo.Domain.Tests
 {

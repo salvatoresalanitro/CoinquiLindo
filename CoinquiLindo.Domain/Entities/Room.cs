@@ -21,7 +21,7 @@
 
         public void AddCleaningTask(CleaningTask task)
         {
-            ArgumentNullException.ThrowIfNull(task);
+            ArgumentNullException.ThrowIfNull(task, nameof(task));
             _cleaningTasks.Add(task);
         }
     }

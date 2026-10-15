@@ -26,14 +26,14 @@
 
         public void AddTenant(Tenant tenant)
         {
-            ArgumentNullException.ThrowIfNull(tenant);
+            ArgumentNullException.ThrowIfNull(tenant, nameof(tenant));
 
             _tenants.Add(tenant);
         }
 
         public void AddRoom(Room room)
         {
-            ArgumentNullException.ThrowIfNull(room);
+            ArgumentNullException.ThrowIfNull(room, nameof(room));
 
             _rooms.Add(room);
         }
