@@ -7,9 +7,11 @@
 
         // add backfield to protect the tenants list from being modified directly
         private readonly List<Tenant> _tenants = new();
+        private readonly List<Room> _rooms = new();
 
         // IReadOnlyCollection avoid the possibility of modifying the list from outside the class
         public IReadOnlyCollection<Tenant> Tenants => _tenants.AsReadOnly();
+        public IReadOnlyCollection<Room> Rooms => _rooms.AsReadOnly();
 
         public House(string name)
         {
@@ -27,6 +29,13 @@
             ArgumentNullException.ThrowIfNull(tenant);
 
             _tenants.Add(tenant);
+        }
+
+        public void AddRoom(Room room)
+        {
+            ArgumentNullException.ThrowIfNull(room);
+
+            _rooms.Add(room);
         }
     }
 }

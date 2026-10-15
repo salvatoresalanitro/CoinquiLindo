@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using CoinquiLindo.Domain.Entities;
+using FluentAssertions;
 
 namespace CoinquiLindo.Domain.Tests
 {
