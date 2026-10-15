@@ -6,5 +6,6 @@ namespace CoinquiLindo.Domain.Repositories
     {
         Task AddAsync(House house, CancellationToken cancellationToken = default);
         Task<House?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+        Task UpdateAsync(House house, CancellationToken cancellationToken = default);
     }
 }
