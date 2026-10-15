@@ -9,7 +9,7 @@ namespace CoinquiLindo.Domain.Tests
         public void AddTenant_Should_AddUserToTheHouse_WhenTenantIsValid()
         {
             //Arrange
-            var house = new House("Via Sondrio 13/20");
+            var house = new House("Casa studenti");
             var tenant = new Tenant("Salvo");
 
             //Act
@@ -24,7 +24,7 @@ namespace CoinquiLindo.Domain.Tests
         public void AddRoom_Should_AddRoomToTheHouse_WhenRoomIsValid()
         {
             //Arrange
-            var house = new House("Via Sondrio 13/20");
+            var house = new House("Casa studenti");
             var room = new Room("Cucina");
 
             //Act
