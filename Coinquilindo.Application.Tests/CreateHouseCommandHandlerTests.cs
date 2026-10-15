@@ -1,4 +1,7 @@
-﻿using CoinquiLindo.Domain.Entities;
+﻿using CoinquiLindo.Application.Houses.Commands;
+using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Repositories;
+using FluentAssertions;
 using NSubstitute;
 
 namespace Coinquilindo.Application.Tests
