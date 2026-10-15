@@ -46,5 +46,23 @@ namespace CoinquiLindo.Domain.Tests
             completedItem.IsCompleted.Should().BeTrue();
             completedItem.CompletedAt.Should().NotBeNull();
         }
+
+        [Fact]
+        public void AddReport_Should_AddReportToTheShift()
+        {
+            // Arrange
+            var room = new Room("Bagno");
+            var tenant = new Tenant("Lucia");
+            var reporter = new Tenant("Salvo");
+            var shift = new Shift(tenant, room, DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+            var report = new Report(reporter, "Manca la carta igienica", null);
+
+            // Act
+            shift.AddReport(report);
+
+            // Assert
+            shift.Reports.Should().ContainSingle();
+            shift.Reports.First().Description.Should().Be("Manca la carta igienica");
+        }
     }
 }
