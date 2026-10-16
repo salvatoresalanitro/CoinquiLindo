@@ -1,4 +1,5 @@
-﻿using CoinquiLindo.Domain.Entities;
+﻿using CoinquiLindo.Application.Shifts.Commands;
+using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Repositories;
 using FluentAssertions;
 using NSubstitute;
@@ -69,7 +70,7 @@ namespace Coinquilindo.Application.Tests
             Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
 
             // Assert
-            await action.Should().ThrowAsync<KeyNotFoundException>()
+            await action.Should().ThrowAsync<InvalidOperationException>()
                 .WithMessage($"Tenant with ID {command.TenantId} is not found in the specified house.");
 
             await _mockShiftRepository.DidNotReceive().AddAsync(Arg.Any<Shift>(), Arg.Any<CancellationToken>());
