@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CoinquiLindo.Application\CoinquiLindo.Application.csproj" />
     <ProjectReference Include="..\CoinquiLindo.Infrastructure\CoinquiLindo.Infrastructure.csproj" />
+    <ProjectReference Include="..\CoinquiLindo.Shared\CoinquiLindo.Shared.csproj" />
   </ItemGroup>
 
 </Project>

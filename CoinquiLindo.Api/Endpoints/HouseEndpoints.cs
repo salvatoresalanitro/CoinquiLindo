@@ -1,5 +1,7 @@
 ﻿using CoinquiLindo.Application.Houses.Commands;
+using CoinquiLindo.Shared.Contracts;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CoinquiLindo.Api.Endpoints
 {
@@ -15,17 +17,21 @@ namespace CoinquiLindo.Api.Endpoints
             return app;
         }
 
-        private static async Task<IResult> CreateHouse(CreateHouseCommand command, ISender sender)
+        private static async Task<IResult> CreateHouse([FromBody] CreateHouseRequest request, ISender sender)
         {
+            var command = new CreateHouseCommand(request.Name);
             var id = await sender.Send(command);
+
             return Results.Ok(id);
         }
 
-        private static async Task<IResult> AddTenantToHouse(Guid houseId, string tenantName,ISender sender)
+        private static async Task<IResult> AddTenantToHouse(Guid houseId, [FromBody] AddTenantRequest request, ISender sender)
         {
             try //TODO: Add middleware for exception handling and logging
             {
-                await sender.Send(new AddTenantToHouseCommand(houseId, tenantName)); //TODO: Consider using a DTO for the request body instead of query parameters for better API design
+                var command = new AddTenantToHouseCommand(houseId, request.TenantName);
+                await sender.Send(command);
+
                 return Results.Ok();
             }
             catch(Exception ex) //TODO: Handle specific exceptions and return appropriate status codes
