@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CoinquiLindo.Api\CoinquiLindo.Api.csproj" />
+    <ProjectReference Include="..\CoinquiLindo.Mobile\CoinquiLindo.Mobile.csproj" />
+  </ItemGroup>
+
+</Project>
