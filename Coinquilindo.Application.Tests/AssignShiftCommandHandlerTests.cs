@@ -1,6 +1,6 @@
 ﻿using CoinquiLindo.Application.Shifts.Commands;
 using CoinquiLindo.Domain.Entities;
-using CoinquiLindo.Domain.Repositories;
+using CoinquiLindo.Domain.RepositoriesInterfaces;
 using FluentAssertions;
 using NSubstitute;
 
