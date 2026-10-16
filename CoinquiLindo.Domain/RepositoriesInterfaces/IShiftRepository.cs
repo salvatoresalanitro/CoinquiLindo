@@ -1,6 +1,6 @@
 ﻿using CoinquiLindo.Domain.Entities;
 
-namespace CoinquiLindo.Domain.Repositories
+namespace CoinquiLindo.Domain.RepositoriesInterfaces
 {
     public interface IShiftRepository
     {

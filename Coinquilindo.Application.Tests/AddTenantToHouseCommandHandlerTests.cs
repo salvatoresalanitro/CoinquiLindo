@@ -1,6 +1,6 @@
 ﻿using CoinquiLindo.Application.Houses.Commands;
 using CoinquiLindo.Domain.Entities;
-using CoinquiLindo.Domain.Repositories;
+using CoinquiLindo.Domain.RepositoriesInterfaces;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ReceivedExtensions;
