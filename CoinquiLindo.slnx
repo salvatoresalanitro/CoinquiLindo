@@ -1,6 +1,8 @@
 <Solution>
+  <Project Path="CoinquiLindo.Api/CoinquiLindo.Api.csproj" Id="d267085c-8d81-4b07-8041-55d11fb89139" />
   <Project Path="Coinquilindo.Application.Tests/Coinquilindo.Application.Tests.csproj" Id="93c6b981-598f-4993-a831-fa8598177928" />
   <Project Path="CoinquiLindo.Application/CoinquiLindo.Application.csproj" Id="c99e653c-9843-496b-8f29-a5ad1dd42df5" />
   <Project Path="CoinquiLindo.Domain.Tests/CoinquiLindo.Domain.Tests.csproj" Id="bf37b51b-0889-4fd2-bda1-264505c85c69" />
   <Project Path="CoinquiLindo.Domain/CoinquiLindo.Domain.csproj" />
+  <Project Path="CoinquiLindo.Infrastructure/CoinquiLindo.Infrastructure.csproj" Id="aa3bc0dc-2114-4ab4-83c1-b3d1dc40b9b7" />
 </Solution>
