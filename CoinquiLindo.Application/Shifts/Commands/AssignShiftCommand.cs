@@ -1,6 +1,4 @@
-﻿using MediatR;
-
-namespace CoinquiLindo.Application.Shifts.Commands
+﻿namespace CoinquiLindo.Application.Shifts.Commands
 {
     public record AssignShiftCommand(
         Guid HouseId,
@@ -8,5 +6,5 @@ namespace CoinquiLindo.Application.Shifts.Commands
         Guid TenantId,
         DateTime StartDate,
         DateTime EndDate
-    ) : IRequest<Guid>;
+    );
 }

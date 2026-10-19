@@ -1,11 +1,9 @@
 ﻿using CoinquiLindo.Domain.RepositoriesInterfaces;
 using CoinquiLindo.Shared.Contracts;
-using MediatR;
 
 namespace CoinquiLindo.Application.Houses.Queries
 {
     public class GetHouseQueryHandler(IHouseRepository houseRepository)
-    : IRequestHandler<GetHouseQuery, HouseResponse?>
     {
         public async Task<HouseResponse?> Handle(GetHouseQuery request, CancellationToken cancellationToken)
         {

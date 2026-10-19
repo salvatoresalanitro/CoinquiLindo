@@ -1,10 +1,8 @@
 ﻿using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
-using MediatR;
-
 namespace CoinquiLindo.Application.Houses.Commands
 {
-    public class CreateHouseCommandHandler(IHouseRepository houseRepository) : IRequestHandler<CreateHouseCommand, Guid>
+    public class CreateHouseCommandHandler(IHouseRepository houseRepository)
     {
         public async Task<Guid> Handle(CreateHouseCommand request, CancellationToken cancellationToken)
         {

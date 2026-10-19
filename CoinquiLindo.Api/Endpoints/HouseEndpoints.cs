@@ -1,8 +1,8 @@
 ﻿using CoinquiLindo.Application.Houses.Commands;
 using CoinquiLindo.Application.Houses.Queries;
 using CoinquiLindo.Shared.Contracts;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Wolverine;
 
 namespace CoinquiLindo.Api.Endpoints
 {
@@ -20,20 +20,20 @@ namespace CoinquiLindo.Api.Endpoints
             return app;
         }
 
-        private static async Task<IResult> CreateHouse([FromBody] CreateHouseRequest request, ISender sender)
+        private static async Task<IResult> CreateHouse([FromBody] CreateHouseRequest request, IMessageBus bus, CancellationToken ct)
         {
             var command = new CreateHouseCommand(request.Name);
-            var id = await sender.Send(command);
+            var id = await bus.InvokeAsync<Guid>(command, ct);
 
             return Results.Ok(id);
         }
 
-        private static async Task<IResult> AddTenantToHouse(Guid houseId, [FromBody] AddTenantRequest request, ISender sender)
+        private static async Task<IResult> AddTenantToHouse(Guid houseId, [FromBody] AddTenantRequest request, IMessageBus bus, CancellationToken ct)
         {
             try //TODO: Add middleware for exception handling and logging
             {
                 var command = new AddTenantToHouseCommand(houseId, request.TenantName);
-                await sender.Send(command);
+                await bus.InvokeAsync(command, ct);
 
                 return Results.Ok();
             }
@@ -43,9 +43,9 @@ namespace CoinquiLindo.Api.Endpoints
             }
         }
 
-        private static async Task<IResult> GetHouse(Guid houseId, ISender sender)
+        private static async Task<IResult> GetHouse(Guid houseId, IMessageBus bus, CancellationToken ct)
         {
-            var response = await sender.Send(new GetHouseQuery(houseId));
+            var response = await bus.InvokeAsync<HouseResponse?>(new GetHouseQuery(houseId), ct);
 
             return response is not null ? Results.Ok(response) : Results.NotFound();
         }

@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MediatR" Version="14.2.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\CoinquiLindo.Domain\CoinquiLindo.Domain.csproj" />
     <ProjectReference Include="..\CoinquiLindo.Shared\CoinquiLindo.Shared.csproj" />
   </ItemGroup>

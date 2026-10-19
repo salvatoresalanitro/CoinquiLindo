@@ -1,6 +1,4 @@
-﻿using MediatR;
-
-namespace CoinquiLindo.Application.Houses.Commands
+﻿namespace CoinquiLindo.Application.Houses.Commands
 {
-    public record AddTenantToHouseCommand(Guid HouseId, string TenantName) : IRequest;
+    public record AddTenantToHouseCommand(Guid HouseId, string TenantName);
 }

@@ -1,6 +1,4 @@
-﻿using MediatR;
-
-namespace CoinquiLindo.Application.Houses.Commands
+﻿namespace CoinquiLindo.Application.Houses.Commands
 {
-    public record CreateHouseCommand(string Name) : IRequest<Guid>;
+    public record CreateHouseCommand(string Name);
 }

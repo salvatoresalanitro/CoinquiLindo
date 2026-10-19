@@ -1,11 +1,9 @@
 ﻿using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
-using MediatR;
 
 namespace CoinquiLindo.Application.Shifts.Commands
 {
     public class AssignShiftCommandHandler(IHouseRepository houseRepository, IShiftRepository shiftRepository)
-        : IRequestHandler<AssignShiftCommand, Guid>
     {
         public async Task<Guid> Handle(AssignShiftCommand request, CancellationToken cancellationToken)
         {
