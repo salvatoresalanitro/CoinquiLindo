@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CoinquiLindo.Domain\CoinquiLindo.Domain.csproj" />
+    <ProjectReference Include="..\CoinquiLindo.Shared\CoinquiLindo.Shared.csproj" />
   </ItemGroup>
 
 </Project>

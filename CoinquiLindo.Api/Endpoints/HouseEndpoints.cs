@@ -1,4 +1,5 @@
 ﻿using CoinquiLindo.Application.Houses.Commands;
+using CoinquiLindo.Application.Houses.Queries;
 using CoinquiLindo.Shared.Contracts;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -13,6 +14,8 @@ namespace CoinquiLindo.Api.Endpoints
 
             group.MapPost("/", CreateHouse);
             group.MapPost("/{houseId:guid}/tenants", AddTenantToHouse);
+
+            group.MapGet("/{houseId:guid}", GetHouse);
 
             return app;
         }
@@ -38,6 +41,13 @@ namespace CoinquiLindo.Api.Endpoints
             {
                 return Results.BadRequest(ex.Message);
             }
+        }
+
+        private static async Task<IResult> GetHouse(Guid houseId, ISender sender)
+        {
+            var response = await sender.Send(new GetHouseQuery(houseId));
+
+            return response is not null ? Results.Ok(response) : Results.NotFound();
         }
     }
 }

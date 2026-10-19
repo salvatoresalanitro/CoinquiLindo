@@ -1,10 +1,58 @@
 ﻿@page "/"
+@using CoinquiLindo.Mobile.Services
+@inject CoinquiLindoApiClient ApiClient
+@inject NavigationManager Navigation
 
-<div class="container text-center mt-5">
-    <h1>CoinquiLindo</h1>
-    <p class="lead mt-3">Patti chiari, casa pulita, non sfrattati.</p>
+<div class="container text-center mt-5 p-3">
+    <h1>🧹 CoinquiLindo</h1>
+    <p class="lead mt-3">Patti chiari, casa pulita.</p>
 
-    <button class="btn btn-primary btn-lg mt-4">
-        Crea o unisciti a una Casa
-    </button>
+    <div class="card mt-5 p-4 shadow-sm">
+        <h3>Nuova Casa</h3>
+
+        <input type="text" class="form-control mt-3"
+               placeholder="Es: Appartamento Milano"
+               @bind="houseName" />
+
+        <button class="btn btn-primary btn-lg mt-3 w-100"
+                @onclick="HandleCreateHouse"
+                disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span>Creazione in corso...</span>
+            }
+            else
+            {
+                <span>Crea Casa</span>
+            }
+        </button>
+    </div>
 </div>
+
+@code {
+    private string houseName = "";
+    private bool isLoading = false;
+
+    private async Task HandleCreateHouse()
+    {
+        if (string.IsNullOrWhiteSpace(houseName)) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        var createdHouseId = await ApiClient.CreateHouseAsync(houseName);
+
+        isLoading = false;
+
+        if (createdHouseId.HasValue)
+        {
+            Navigation.NavigateTo($"/house/{createdHouseId.Value}");
+        }
+        else
+        {
+			// TODO: Handle error (e.g., show a message to the user)
+            Console.WriteLine("Errore durante la creazione della casa.");
+        }
+    }
+}

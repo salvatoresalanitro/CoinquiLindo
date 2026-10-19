@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using CoinquiLindo.Mobile.Services;
+using Microsoft.Extensions.Logging;
 
 namespace CoinquiLindo.Mobile
 {
@@ -20,6 +21,16 @@ namespace CoinquiLindo.Mobile
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
+
+            string apiBaseAddress = DeviceInfo.Platform == DevicePlatform.Android
+            ? "http://10.0.2.2:5273"
+            : "http://localhost:5273";
+
+            // add http client
+            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseAddress) });
+
+            // add our services
+            builder.Services.AddScoped<CoinquiLindoApiClient>();
 
             return builder.Build();
         }
