@@ -16,6 +16,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="WolverineFx" Version="6.51.0" />
+    <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.51.0" />
   </ItemGroup>
 
   <ItemGroup>

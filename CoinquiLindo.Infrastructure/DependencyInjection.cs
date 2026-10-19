@@ -9,8 +9,10 @@ namespace CoinquiLindo.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
         {
-            services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite(connectionString));
+            // Singleton options let Wolverine build AppDbContext inline instead of using service location
+            services.AddDbContext<AppDbContext>(
+                options => options.UseSqlite(connectionString),
+                optionsLifetime: ServiceLifetime.Singleton);
 
             services.AddScoped<IHouseRepository, HouseRepository>();
             services.AddScoped<IShiftRepository, ShiftRepository>();

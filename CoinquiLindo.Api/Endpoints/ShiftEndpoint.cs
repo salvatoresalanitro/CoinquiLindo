@@ -1,7 +1,7 @@
 ﻿using CoinquiLindo.Application.Shifts.Commands;
 using CoinquiLindo.Shared.Contracts;
-using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Wolverine;
 
 namespace CoinquiLindo.Api.Endpoints
 {
@@ -16,18 +16,18 @@ namespace CoinquiLindo.Api.Endpoints
             return app;
         }
 
-        private static async Task<IResult> AssignShift(Guid houseId, [FromBody] AssignShiftRequest request, ISender sender)
+        private static async Task<IResult> AssignShift(Guid houseId, [FromBody] AssignShiftRequest request, IMessageBus bus, CancellationToken ct)
         {
             try //TODO: Add middleware for exception handling and logging
             {
                 var command = new AssignShiftCommand(
-                houseId,
-                request.TenantId,
-                request.RoomId,
-                request.StartDate,
-                request.EndDate);
+                    HouseId: houseId,
+                    RoomId: request.RoomId,
+                    TenantId: request.TenantId,
+                    StartDate: request.StartDate,
+                    EndDate: request.EndDate);
 
-                var id = await sender.Send(command);
+                var id = await bus.InvokeAsync<Guid>(command, ct);
                 return Results.Ok(id);
             }
             catch (Exception ex) //TODO: Handle specific exceptions and return appropriate status codes
