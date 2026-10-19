@@ -1,0 +1,102 @@
+﻿@page "/house/{HouseId:guid}"
+@using CoinquiLindo.Mobile.Services
+@using CoinquiLindo.Shared.Contracts
+@inject CoinquiLindoApiClient ApiClient
+
+<div class="container mt-4">
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p>Caricamento casa...</p>
+        </div>
+    }
+    else if (house == null)
+    {
+        <div class="alert alert-danger">Casa non trovata!</div>
+    }
+    else
+    {
+        <h2 class="mb-4">@house.Name</h2>
+
+        <!-- Flatmate section -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">Coinquilini</h4>
+            </div>
+            <div class="card-body">
+                @if (house.Tenants.Any())
+                {
+                    <ul class="list-group mb-3">
+                        @foreach (var tenant in house.Tenants)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                @tenant.Name
+                                <span class="badge bg-secondary rounded-pill">👤</span>
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted">Nessun inquilino registrato. Aggiungi il primo!</p>
+                }
+
+                <!-- Add flatmate -->
+                <div class="input-group mt-3">
+                    <input type="text" class="form-control" placeholder="Nome coinquilino..." @bind="newTenantName" />
+                    <button class="btn btn-outline-primary" type="button" @onclick="HandleAddTenant" disabled="@isAddingTenant">
+                        @if (isAddingTenant)
+                        {
+                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        }
+                        else
+                        {
+                            <span>Aggiungi</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid HouseId { get; set; }
+
+    private HouseResponse? house;
+    private bool isLoading = true;
+
+    private string newTenantName = "";
+    private bool isAddingTenant = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHouseData();
+    }
+
+    private async Task LoadHouseData()
+    {
+        isLoading = true;
+        house = await ApiClient.GetHouseAsync(HouseId);
+        isLoading = false;
+    }
+
+    private async Task HandleAddTenant()
+    {
+        if (string.IsNullOrWhiteSpace(newTenantName)) return;
+
+        isAddingTenant = true;
+
+        var success = await ApiClient.AddTenantAsync(HouseId, newTenantName);
+
+        if (success)
+        {
+            newTenantName = string.Empty;
+            await LoadHouseData();
+        }
+
+        isAddingTenant = false;
+    }
+}
