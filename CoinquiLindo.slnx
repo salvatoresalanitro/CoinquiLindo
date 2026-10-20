@@ -5,6 +5,7 @@
   <Project Path="CoinquiLindo.Architecture.Tests/CoinquiLindo.Architecture.Tests.csproj" Id="359f42dc-015d-4c92-8e48-aeda34ba6982" />
   <Project Path="CoinquiLindo.Domain.Tests/CoinquiLindo.Domain.Tests.csproj" Id="bf37b51b-0889-4fd2-bda1-264505c85c69" />
   <Project Path="CoinquiLindo.Domain/CoinquiLindo.Domain.csproj" />
+  <Project Path="CoinquiLindo.Infrastructure.Tests/CoinquiLindo.Infrastructure.Tests.csproj" />
   <Project Path="CoinquiLindo.Infrastructure/CoinquiLindo.Infrastructure.csproj" Id="aa3bc0dc-2114-4ab4-83c1-b3d1dc40b9b7" />
   <Project Path="CoinquiLindo.Mobile/CoinquiLindo.Mobile.csproj" Id="2e6f0bc3-c249-4062-b585-015bcce50745">
     <Deploy Solution="Debug|*" />

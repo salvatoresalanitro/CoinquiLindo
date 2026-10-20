@@ -23,7 +23,7 @@ namespace CoinquiLindo.Infrastructure.Repositories
 
         public Task UpdateAsync(House house, CancellationToken cancellationToken = default)
         {
-            dbContext.Houses.Update(house);
+            // House is already tracked: Update() would mark new children as Modified
             return dbContext.SaveChangesAsync(cancellationToken);
         }
     }
