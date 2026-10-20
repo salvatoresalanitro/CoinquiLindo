@@ -1,5 +1,4 @@
 ﻿@page "/house/{HouseId:guid}"
-@using CoinquiLindo.Mobile.Services
 @using CoinquiLindo.Shared.Contracts
 @inject CoinquiLindoApiClient ApiClient
 
@@ -13,10 +12,13 @@
     }
     else if (house == null)
     {
-        <div class="alert alert-danger">Casa non trovata!</div>
+        @* A missing house cannot be fixed by retrying; network/server errors can *@
+        <ErrorAlert Error="loadError" OnRetry="@(loadError?.Status == 404 ? default : EventCallback.Factory.Create(this, LoadHouseData))" />
     }
     else
     {
+        <ErrorAlert Error="refreshError" OnRetry="RefreshHouseData" OnDismiss="() => refreshError = null" />
+
         <h2 class="mb-4">@house.Name</h2>
 
         <!-- Flatmate section -->
@@ -55,6 +57,10 @@
                             <span>Aggiungi</span>
                         }
                     </button>
+                </div>
+
+                <div class="mt-2">
+                    <ErrorAlert Error="tenantError" OnDismiss="() => tenantError = null" />
                 </div>
             </div>
         </div>
@@ -116,10 +122,7 @@
                         </div>
                     }
 
-                    @if (roomError is not null)
-                    {
-                        <div class="alert alert-warning py-2">@roomError</div>
-                    }
+                    <ErrorAlert Error="roomError" OnDismiss="() => roomError = null" />
 
                     <button class="btn btn-primary w-100" type="button" @onclick="HandleAddRoom" disabled="@(isAddingRoom || string.IsNullOrWhiteSpace(newRoomName))">
                         @if (isAddingRoom)
@@ -143,15 +146,18 @@
 
     private HouseResponse? house;
     private bool isLoading = true;
+    private ApiError? loadError;
+    private ApiError? refreshError;
 
     private string newTenantName = "";
     private bool isAddingTenant = false;
+    private ApiError? tenantError;
 
     private string newRoomName = "";
     private string newTaskDescription = "";
     private readonly List<string> pendingTasks = new();
     private bool isAddingRoom = false;
-    private string? roomError;
+    private ApiError? roomError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -161,8 +167,30 @@
     private async Task LoadHouseData()
     {
         isLoading = true;
-        house = await ApiClient.GetHouseAsync(HouseId);
+        loadError = null;
+
+        var result = await ApiClient.GetHouseAsync(HouseId);
+        house = result.Value;
+        loadError = result.Error;
+
         isLoading = false;
+    }
+
+    // Refresh after a mutation keeps the current data on screen if the reload fails
+    private async Task RefreshHouseData()
+    {
+        refreshError = null;
+
+        var result = await ApiClient.GetHouseAsync(HouseId);
+
+        if (result.IsSuccess)
+        {
+            house = result.Value;
+        }
+        else
+        {
+            refreshError = result.Error;
+        }
     }
 
     private async Task HandleAddTenant()
@@ -170,13 +198,18 @@
         if (string.IsNullOrWhiteSpace(newTenantName)) return;
 
         isAddingTenant = true;
+        tenantError = null;
 
-        var success = await ApiClient.AddTenantAsync(HouseId, newTenantName);
+        var result = await ApiClient.AddTenantAsync(HouseId, newTenantName.Trim());
 
-        if (success)
+        if (result.IsSuccess)
         {
             newTenantName = string.Empty;
-            await LoadHouseData();
+            await RefreshHouseData();
+        }
+        else
+        {
+            tenantError = result.Error;
         }
 
         isAddingTenant = false;
@@ -205,17 +238,17 @@
         isAddingRoom = true;
         roomError = null;
 
-        var success = await ApiClient.AddRoomAsync(HouseId, newRoomName.Trim(), pendingTasks.ToList());
+        var result = await ApiClient.AddRoomAsync(HouseId, newRoomName.Trim(), pendingTasks.ToList());
 
-        if (success)
+        if (result.IsSuccess)
         {
             newRoomName = string.Empty;
             pendingTasks.Clear();
-            await LoadHouseData();
+            await RefreshHouseData();
         }
         else
         {
-            roomError = "Impossibile aggiungere la stanza. Verifica che il nome non sia già presente.";
+            roomError = result.Error;
         }
 
         isAddingRoom = false;

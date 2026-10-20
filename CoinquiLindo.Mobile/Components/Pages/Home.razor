@@ -1,5 +1,4 @@
 ﻿@page "/"
-@using CoinquiLindo.Mobile.Services
 @inject CoinquiLindoApiClient ApiClient
 @inject NavigationManager Navigation
 
@@ -13,6 +12,10 @@
         <input type="text" class="form-control mt-3"
                placeholder="Es: Appartamento Milano"
                @bind="houseName" />
+
+        <div class="mt-3">
+            <ErrorAlert Error="error" OnDismiss="() => error = null" />
+        </div>
 
         <button class="btn btn-primary btn-lg mt-3 w-100"
                 @onclick="HandleCreateHouse"
@@ -33,26 +36,26 @@
 @code {
     private string houseName = "";
     private bool isLoading = false;
+    private ApiError? error;
 
     private async Task HandleCreateHouse()
     {
         if (string.IsNullOrWhiteSpace(houseName)) return;
 
         isLoading = true;
-        StateHasChanged();
+        error = null;
 
-        var createdHouseId = await ApiClient.CreateHouseAsync(houseName);
+        var result = await ApiClient.CreateHouseAsync(houseName.Trim());
 
         isLoading = false;
 
-        if (createdHouseId.HasValue)
+        if (result.IsSuccess)
         {
-            Navigation.NavigateTo($"/house/{createdHouseId.Value}");
+            Navigation.NavigateTo($"/house/{result.Value}");
         }
         else
         {
-			// TODO: Handle error (e.g., show a message to the user)
-            Console.WriteLine("Errore durante la creazione della casa.");
+            error = result.Error;
         }
     }
 }

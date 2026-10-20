@@ -1,4 +1,4 @@
-﻿using CoinquiLindo.Mobile.Services;
+﻿using CoinquiLindo.Client;
 using Microsoft.Extensions.Logging;
 
 namespace CoinquiLindo.Mobile
@@ -27,7 +27,11 @@ namespace CoinquiLindo.Mobile
             : "http://localhost:5273";
 
             // add http client
-            builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseAddress) });
+            builder.Services.AddScoped(sp => new HttpClient
+            {
+                BaseAddress = new Uri(apiBaseAddress),
+                Timeout = TimeSpan.FromSeconds(15)
+            });
 
             // add our services
             builder.Services.AddScoped<CoinquiLindoApiClient>();

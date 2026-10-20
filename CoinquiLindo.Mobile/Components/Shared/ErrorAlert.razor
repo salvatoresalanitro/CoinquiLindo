@@ -1,0 +1,24 @@
+@if (Error is not null)
+{
+    <div class="alert @AlertClass d-flex align-items-start gap-2 py-2" role="alert">
+        <span aria-hidden="true">⚠️</span>
+        <div class="flex-grow-1">@Error.UserMessage</div>
+        @if (OnRetry.HasDelegate)
+        {
+            <button type="button" class="btn btn-sm btn-outline-dark" @onclick="OnRetry">Riprova</button>
+        }
+        @if (OnDismiss.HasDelegate)
+        {
+            <button type="button" class="btn-close" aria-label="Chiudi" @onclick="OnDismiss"></button>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public ApiError? Error { get; set; }
+    [Parameter] public EventCallback OnRetry { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    // Server/network failures are not the user's fault: stronger visual cue than validation errors
+    private string AlertClass => Error?.Status is null or >= 500 ? "alert-danger" : "alert-warning";
+}

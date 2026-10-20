@@ -74,6 +74,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\CoinquiLindo.Client\CoinquiLindo.Client.csproj" />
       <ProjectReference Include="..\CoinquiLindo.Shared\CoinquiLindo.Shared.csproj" />
     </ItemGroup>
 
