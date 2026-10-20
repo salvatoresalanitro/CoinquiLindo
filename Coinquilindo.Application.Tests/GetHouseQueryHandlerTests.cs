@@ -42,6 +42,31 @@ namespace Coinquilindo.Application.Tests
         }
 
         [Fact]
+        public async Task Handle_Should_Return_RoomsWithCleaningTasks_OrderedByName()
+        {
+            // Arrange
+            var house = new House("Casa studenti");
+            var kitchen = new Room("Cucina");
+            kitchen.AddCleaningTask(new CleaningTask("Pulire i fornelli"));
+            kitchen.AddCleaningTask(new CleaningTask("Lavare i piatti"));
+            house.AddRoom(kitchen);
+            house.AddRoom(new Room("Bagno"));
+
+            _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>())
+                .Returns(house);
+
+            // Act
+            var result = await _handler.Handle(new GetHouseQuery(house.Id), CancellationToken.None);
+
+            // Assert
+            result!.Rooms.Select(r => r.Name).Should().Equal("Bagno", "Cucina");
+
+            var kitchenResponse = result.Rooms.Single(r => r.Id == kitchen.Id);
+            kitchenResponse.CleaningTasks.Select(c => c.Description)
+                .Should().Equal("Lavare i piatti", "Pulire i fornelli");
+        }
+
+        [Fact]
         public async Task Handle_Should_ReturnNull_WhenHouseDoesNotExist()
         {
             // Arrange

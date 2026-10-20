@@ -41,5 +41,13 @@ namespace CoinquiLindo.Mobile.Services
 
             return response.IsSuccessStatusCode;
         }
+
+        public async Task<bool> AddRoomAsync(Guid houseId, string name, List<string> cleaningTasks)
+        {
+            var request = new AddRoomRequest(name, cleaningTasks);
+            var response = await httpClient.PostAsJsonAsync($"/api/houses/{houseId}/rooms", request);
+
+            return response.IsSuccessStatusCode;
+        }
     }
 }

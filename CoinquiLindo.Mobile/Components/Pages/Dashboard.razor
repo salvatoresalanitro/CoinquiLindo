@@ -58,6 +58,82 @@
                 </div>
             </div>
         </div>
+
+        <!-- Rooms section -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <h4 class="mb-0">Stanze</h4>
+            </div>
+            <div class="card-body">
+                @if (house.Rooms.Any())
+                {
+                    <ul class="list-group mb-3">
+                        @foreach (var room in house.Rooms)
+                        {
+                            <li class="list-group-item">
+                                <div class="fw-semibold">@room.Name</div>
+                                @if (room.CleaningTasks.Any())
+                                {
+                                    <div class="d-flex flex-wrap gap-1 mt-2">
+                                        @foreach (var task in room.CleaningTasks)
+                                        {
+                                            <span class="badge rounded-pill text-bg-light border">@task.Description</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">Nessuna attività di pulizia</small>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <p class="text-muted">Nessuna stanza registrata. Aggiungi la prima!</p>
+                }
+
+                <!-- Add room -->
+                <div class="mt-3">
+                    <input type="text" class="form-control mb-2" placeholder="Nome stanza (es. Cucina)..." @bind="newRoomName" @bind:event="oninput" />
+
+                    <div class="input-group mb-2">
+                        <input type="text" class="form-control" placeholder="Attività di pulizia + Invio" @bind="newTaskDescription" @bind:event="oninput" @onkeydown="HandleTaskKeyDown" />
+                        <button class="btn btn-outline-secondary" type="button" @onclick="AddPendingTask">+</button>
+                    </div>
+
+                    @if (pendingTasks.Any())
+                    {
+                        <div class="d-flex flex-wrap gap-1 mb-2">
+                            @foreach (var task in pendingTasks)
+                            {
+                                <span class="badge rounded-pill text-bg-primary d-flex align-items-center gap-1">
+                                    @task
+                                    <button type="button" class="btn-close btn-close-white" style="font-size: .5rem" aria-label="Rimuovi" @onclick="() => pendingTasks.Remove(task)"></button>
+                                </span>
+                            }
+                        </div>
+                    }
+
+                    @if (roomError is not null)
+                    {
+                        <div class="alert alert-warning py-2">@roomError</div>
+                    }
+
+                    <button class="btn btn-primary w-100" type="button" @onclick="HandleAddRoom" disabled="@(isAddingRoom || string.IsNullOrWhiteSpace(newRoomName))">
+                        @if (isAddingRoom)
+                        {
+                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        }
+                        else
+                        {
+                            <span>Aggiungi stanza</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
     }
 </div>
 
@@ -70,6 +146,12 @@
 
     private string newTenantName = "";
     private bool isAddingTenant = false;
+
+    private string newRoomName = "";
+    private string newTaskDescription = "";
+    private readonly List<string> pendingTasks = new();
+    private bool isAddingRoom = false;
+    private string? roomError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -98,5 +180,44 @@
         }
 
         isAddingTenant = false;
+    }
+
+    private void HandleTaskKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") AddPendingTask();
+    }
+
+    private void AddPendingTask()
+    {
+        var description = newTaskDescription.Trim();
+        if (description.Length > 0 && !pendingTasks.Contains(description, StringComparer.OrdinalIgnoreCase))
+        {
+            pendingTasks.Add(description);
+        }
+
+        newTaskDescription = string.Empty;
+    }
+
+    private async Task HandleAddRoom()
+    {
+        if (string.IsNullOrWhiteSpace(newRoomName)) return;
+
+        isAddingRoom = true;
+        roomError = null;
+
+        var success = await ApiClient.AddRoomAsync(HouseId, newRoomName.Trim(), pendingTasks.ToList());
+
+        if (success)
+        {
+            newRoomName = string.Empty;
+            pendingTasks.Clear();
+            await LoadHouseData();
+        }
+        else
+        {
+            roomError = "Impossibile aggiungere la stanza. Verifica che il nome non sia già presente.";
+        }
+
+        isAddingRoom = false;
     }
 }

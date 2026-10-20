@@ -34,5 +34,24 @@ namespace CoinquiLindo.Domain.Tests
             house.Rooms.Should().ContainSingle();
             house.Rooms.First().Name.Should().Be("Cucina");
         }
+
+        [Theory]
+        [InlineData("Cucina")]
+        [InlineData("cucina")]
+        [InlineData("  CUCINA  ")]
+        public void AddRoom_Should_Throw_When_RoomNameAlreadyExists(string duplicateName)
+        {
+            //Arrange
+            var house = new House("Casa studenti");
+            house.AddRoom(new Room("Cucina"));
+
+            //Act
+            var action = () => house.AddRoom(new Room(duplicateName));
+
+            //Assert
+            action.Should().Throw<InvalidOperationException>()
+                .WithMessage("*already exists*");
+            house.Rooms.Should().ContainSingle();
+        }
     }
 }

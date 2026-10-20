@@ -35,6 +35,12 @@
         {
             ArgumentNullException.ThrowIfNull(room, nameof(room));
 
+            var name = room.Name.Trim();
+            if (_rooms.Any(r => string.Equals(r.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException($"A room named '{name}' already exists in this house.");
+            }
+
             _rooms.Add(room);
         }
     }
