@@ -1,4 +1,5 @@
 ﻿using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Exceptions;
 using FluentAssertions;
 
 namespace CoinquiLindo.Domain.Tests
@@ -49,8 +50,8 @@ namespace CoinquiLindo.Domain.Tests
             var action = () => house.AddRoom(new Room(duplicateName));
 
             //Assert
-            action.Should().Throw<InvalidOperationException>()
-                .WithMessage("*already exists*");
+            action.Should().Throw<RoomNameAlreadyExistsException>()
+                .Which.Code.Should().Be("House.RoomNameAlreadyExists");
             house.Rooms.Should().ContainSingle();
         }
     }

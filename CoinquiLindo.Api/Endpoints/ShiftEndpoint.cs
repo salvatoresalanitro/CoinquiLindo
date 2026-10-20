@@ -11,29 +11,26 @@ namespace CoinquiLindo.Api.Endpoints
         {
             var group = app.MapGroup("/api/houses/{houseId:guid}/shifts").WithTags("Shifts");
 
-            group.MapPost("/", AssignShift);
+            group.MapPost("/", AssignShift)
+                .Produces<Guid>()
+                .ProducesProblem(StatusCodes.Status400BadRequest)
+                .ProducesProblem(StatusCodes.Status404NotFound);
 
             return app;
         }
 
         private static async Task<IResult> AssignShift(Guid houseId, [FromBody] AssignShiftRequest request, IMessageBus bus, CancellationToken ct)
         {
-            try //TODO: Add middleware for exception handling and logging
-            {
-                var command = new AssignShiftCommand(
-                    HouseId: houseId,
-                    RoomId: request.RoomId,
-                    TenantId: request.TenantId,
-                    StartDate: request.StartDate,
-                    EndDate: request.EndDate);
+            var command = new AssignShiftCommand(
+                HouseId: houseId,
+                RoomId: request.RoomId,
+                TenantId: request.TenantId,
+                StartDate: request.StartDate,
+                EndDate: request.EndDate);
 
-                var id = await bus.InvokeAsync<Guid>(command, ct);
-                return Results.Ok(id);
-            }
-            catch (Exception ex) //TODO: Handle specific exceptions and return appropriate status codes
-            {
-                return Results.BadRequest(ex.Message);
-            }
+            var id = await bus.InvokeAsync<Guid>(command, ct);
+
+            return Results.Ok(id);
         }
     }
 }

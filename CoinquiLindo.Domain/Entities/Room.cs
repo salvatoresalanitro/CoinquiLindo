@@ -1,4 +1,6 @@
-﻿namespace CoinquiLindo.Domain.Entities
+﻿using CoinquiLindo.Domain.Exceptions;
+
+namespace CoinquiLindo.Domain.Entities
 {
     public class Room
     {
@@ -13,7 +15,7 @@
         {
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentException("Room name cannot be null or empty.", nameof(name));
+                throw new DomainValidationException("Room.NameRequired", "Room name cannot be empty.");
             }
             Id = Guid.NewGuid();
             Name = name;

@@ -1,5 +1,6 @@
 ﻿using CoinquiLindo.Application.Shifts.Commands;
 using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 using FluentAssertions;
 using NSubstitute;
@@ -70,8 +71,45 @@ namespace Coinquilindo.Application.Tests
             Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
 
             // Assert
-            await action.Should().ThrowAsync<InvalidOperationException>()
-                .WithMessage($"Tenant with ID {command.TenantId} is not found in the specified house.");
+            await action.Should().ThrowAsync<NotFoundException>()
+                .Where(e => e.Code == "Tenant.NotFound");
+
+            await _mockShiftRepository.DidNotReceive().AddAsync(Arg.Any<Shift>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task Handle_Should_ThrowNotFound_WhenRoomNotInHouse()
+        {
+            // Arrange
+            var house = new House("Stanza studenti");
+            var tenant = new Tenant("Salvo");
+            house.AddTenant(tenant);
+
+            _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>())
+                .Returns(house);
+
+            var command = new AssignShiftCommand(house.Id, Guid.NewGuid(), tenant.Id, DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+
+            // Act
+            Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            await action.Should().ThrowAsync<NotFoundException>()
+                .Where(e => e.Code == "Room.NotFound");
+        }
+
+        [Fact]
+        public async Task Handle_Should_ThrowNotFound_WhenHouseDoesNotExist()
+        {
+            // Arrange
+            var command = new AssignShiftCommand(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+
+            // Act
+            Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            await action.Should().ThrowAsync<NotFoundException>()
+                .Where(e => e.Code == "House.NotFound");
 
             await _mockShiftRepository.DidNotReceive().AddAsync(Arg.Any<Shift>(), Arg.Any<CancellationToken>());
         }

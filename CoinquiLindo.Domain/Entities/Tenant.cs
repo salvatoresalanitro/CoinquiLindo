@@ -1,4 +1,6 @@
-﻿namespace CoinquiLindo.Domain.Entities
+﻿using CoinquiLindo.Domain.Exceptions;
+
+namespace CoinquiLindo.Domain.Entities
 {
     public class Tenant
     {
@@ -9,7 +11,7 @@
         {
             if(string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentException("Tenant name cannot be empty.", nameof(name));
+                throw new DomainValidationException("Tenant.NameRequired", "Tenant name cannot be empty.");
             }
 
             Id = Guid.NewGuid();
