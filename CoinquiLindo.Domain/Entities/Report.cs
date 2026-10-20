@@ -1,4 +1,6 @@
-﻿namespace CoinquiLindo.Domain.Entities
+﻿using CoinquiLindo.Domain.Exceptions;
+
+namespace CoinquiLindo.Domain.Entities
 {
     public class Report
     {
@@ -14,7 +16,7 @@
 
             if(string.IsNullOrWhiteSpace(description))
             {
-                throw new ArgumentException("Description cannot be empty.", nameof(description));
+                throw new DomainValidationException("Report.DescriptionRequired", "Report description cannot be empty.");
             }
 
             Id = Guid.NewGuid();

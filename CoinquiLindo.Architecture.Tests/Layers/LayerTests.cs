@@ -60,5 +60,22 @@ namespace CoinquiLindo.Architecture.Tests.Layers
                 h.GetMethod("Handle").Should().NotBeNull($"{h.Name} must expose a public Handle method");
             });
         }
+
+        [Fact]
+        public void DomainExceptions_Should_InheritFromDomainException()
+        {
+            var result = Types.InAssembly(typeof(Domain.Entities.House).Assembly)
+                .That()
+                .ResideInNamespace("CoinquiLindo.Domain.Exceptions")
+                .And()
+                .DoNotHaveName(nameof(Domain.Exceptions.DomainException))
+                .Should()
+                .Inherit(typeof(Domain.Exceptions.DomainException))
+                .GetResult();
+
+            result.IsSuccessful.Should().BeTrue(
+                "every domain error must be mapped by the global exception handler. Offending types: {0}",
+                string.Join(", ", result.FailingTypeNames ?? []));
+        }
     }
 }

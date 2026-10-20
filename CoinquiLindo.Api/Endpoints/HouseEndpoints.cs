@@ -12,11 +12,24 @@ namespace CoinquiLindo.Api.Endpoints
         {
             var group = app.MapGroup("/api/houses").WithTags("Houses");
 
-            group.MapPost("/", CreateHouse);
-            group.MapPost("/{houseId:guid}/tenants", AddTenantToHouse);
-            group.MapPost("/{houseId:guid}/rooms", AddRoomToHouse);
+            group.MapPost("/", CreateHouse)
+                .Produces<Guid>()
+                .ProducesProblem(StatusCodes.Status400BadRequest);
 
-            group.MapGet("/{houseId:guid}", GetHouse);
+            group.MapPost("/{houseId:guid}/tenants", AddTenantToHouse)
+                .Produces(StatusCodes.Status200OK)
+                .ProducesProblem(StatusCodes.Status400BadRequest)
+                .ProducesProblem(StatusCodes.Status404NotFound);
+
+            group.MapPost("/{houseId:guid}/rooms", AddRoomToHouse)
+                .Produces<Guid>()
+                .ProducesProblem(StatusCodes.Status400BadRequest)
+                .ProducesProblem(StatusCodes.Status404NotFound)
+                .ProducesProblem(StatusCodes.Status409Conflict);
+
+            group.MapGet("/{houseId:guid}", GetHouse)
+                .Produces<HouseResponse>()
+                .ProducesProblem(StatusCodes.Status404NotFound);
 
             return app;
         }
@@ -31,32 +44,18 @@ namespace CoinquiLindo.Api.Endpoints
 
         private static async Task<IResult> AddTenantToHouse(Guid houseId, [FromBody] AddTenantRequest request, IMessageBus bus, CancellationToken ct)
         {
-            try //TODO: Add middleware for exception handling and logging
-            {
-                var command = new AddTenantToHouseCommand(houseId, request.TenantName);
-                await bus.InvokeAsync(command, ct);
+            var command = new AddTenantToHouseCommand(houseId, request.TenantName);
+            await bus.InvokeAsync(command, ct);
 
-                return Results.Ok();
-            }
-            catch(Exception ex) //TODO: Handle specific exceptions and return appropriate status codes
-            {
-                return Results.BadRequest(ex.Message);
-            }
+            return Results.Ok();
         }
 
         private static async Task<IResult> AddRoomToHouse(Guid houseId, [FromBody] AddRoomRequest request, IMessageBus bus, CancellationToken ct)
         {
-            try //TODO: Add middleware for exception handling and logging
-            {
-                var command = new AddRoomToHouseCommand(houseId, request.Name, request.CleaningTasks ?? []);
-                var roomId = await bus.InvokeAsync<Guid>(command, ct);
+            var command = new AddRoomToHouseCommand(houseId, request.Name, request.CleaningTasks ?? []);
+            var roomId = await bus.InvokeAsync<Guid>(command, ct);
 
-                return Results.Ok(roomId);
-            }
-            catch (Exception ex) //TODO: Handle specific exceptions and return appropriate status codes
-            {
-                return Results.BadRequest(ex.Message);
-            }
+            return Results.Ok(roomId);
         }
 
         private static async Task<IResult> GetHouse(Guid houseId, IMessageBus bus, CancellationToken ct)

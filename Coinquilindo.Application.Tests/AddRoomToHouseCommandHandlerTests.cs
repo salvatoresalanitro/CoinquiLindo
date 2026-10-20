@@ -1,5 +1,6 @@
 using CoinquiLindo.Application.Houses.Commands;
 using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 using FluentAssertions;
 using NSubstitute;
@@ -69,8 +70,8 @@ namespace Coinquilindo.Application.Tests
             Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
 
             // Assert
-            await action.Should().ThrowAsync<KeyNotFoundException>()
-                .WithMessage($"House with ID {command.HouseId} not found.");
+            await action.Should().ThrowAsync<NotFoundException>()
+                .Where(e => e.Code == "House.NotFound");
 
             await _mockHouseRepository.DidNotReceive().UpdateAsync(Arg.Any<House>(), Arg.Any<CancellationToken>());
         }
@@ -89,7 +90,7 @@ namespace Coinquilindo.Application.Tests
             Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
 
             // Assert
-            await action.Should().ThrowAsync<InvalidOperationException>();
+            await action.Should().ThrowAsync<RoomNameAlreadyExistsException>();
             await _mockHouseRepository.DidNotReceive().UpdateAsync(Arg.Any<House>(), Arg.Any<CancellationToken>());
         }
     }

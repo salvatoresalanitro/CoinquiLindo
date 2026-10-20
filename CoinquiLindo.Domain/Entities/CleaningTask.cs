@@ -1,4 +1,6 @@
-﻿namespace CoinquiLindo.Domain.Entities
+﻿using CoinquiLindo.Domain.Exceptions;
+
+namespace CoinquiLindo.Domain.Entities
 {
     public class CleaningTask
     {
@@ -9,7 +11,7 @@
         {
             if (string.IsNullOrWhiteSpace(description))
             {
-                throw new ArgumentException("Cleaning task description cannot be empty.", nameof(description));
+                throw new DomainValidationException("CleaningTask.DescriptionRequired", "Cleaning task description cannot be empty.");
             }
 
             Id = Guid.NewGuid();

@@ -1,4 +1,5 @@
 ﻿using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 namespace CoinquiLindo.Application.Houses.Commands
 {
@@ -6,12 +7,8 @@ namespace CoinquiLindo.Application.Houses.Commands
     {
         public async Task Handle(AddTenantToHouseCommand request, CancellationToken cancellationToken)
         {
-            var house = await houseRepository.GetByIdAsync(request.HouseId, cancellationToken);
-
-            if(house == null)
-            {
-                throw new KeyNotFoundException($"House with ID {request.HouseId} not found.");
-            }
+            var house = await houseRepository.GetByIdAsync(request.HouseId, cancellationToken)
+                ?? throw new NotFoundException(nameof(House), request.HouseId);
 
             var newTenant = new Tenant(request.TenantName);
 

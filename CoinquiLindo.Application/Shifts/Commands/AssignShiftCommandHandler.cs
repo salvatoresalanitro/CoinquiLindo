@@ -1,4 +1,5 @@
 ﻿using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 
 namespace CoinquiLindo.Application.Shifts.Commands
@@ -7,26 +8,14 @@ namespace CoinquiLindo.Application.Shifts.Commands
     {
         public async Task<Guid> Handle(AssignShiftCommand request, CancellationToken cancellationToken)
         {
-            var house = await houseRepository.GetByIdAsync(request.HouseId);
+            var house = await houseRepository.GetByIdAsync(request.HouseId, cancellationToken)
+                ?? throw new NotFoundException(nameof(House), request.HouseId);
 
-            if (house == null)
-            {
-                throw new KeyNotFoundException("House not found");
-            }
+            var tenant = house.Tenants.FirstOrDefault(t => t.Id == request.TenantId)
+                ?? throw new NotFoundException(nameof(Tenant), request.TenantId);
 
-            var tenant = house.Tenants.FirstOrDefault(t => t.Id == request.TenantId);
-
-            if(tenant == null)
-            {
-                throw new InvalidOperationException($"Tenant with ID {request.TenantId} is not found in the specified house.");
-            }
-
-            var room = house.Rooms.FirstOrDefault(r => r.Id == request.RoomId);
-
-            if(room == null)
-            {
-                throw new InvalidOperationException($"Room with ID {request.RoomId} is not found in the specified house.");
-            }
+            var room = house.Rooms.FirstOrDefault(r => r.Id == request.RoomId)
+                ?? throw new NotFoundException(nameof(Room), request.RoomId);
 
             var shift = new Shift(tenant, room, request.StartDate, request.EndDate);
 

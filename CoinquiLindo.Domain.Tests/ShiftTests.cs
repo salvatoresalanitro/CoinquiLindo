@@ -1,4 +1,5 @@
 ﻿using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Exceptions;
 using FluentAssertions;
 
 namespace CoinquiLindo.Domain.Tests
@@ -63,6 +64,38 @@ namespace CoinquiLindo.Domain.Tests
             // Assert
             shift.Reports.Should().ContainSingle();
             shift.Reports.First().Description.Should().Be("Manca la carta igienica");
+        }
+
+        [Fact]
+        public void AddReport_Should_Throw_When_ReporterIsTheAssignedTenant()
+        {
+            // Arrange
+            var tenant = new Tenant("Lucia");
+            var shift = new Shift(tenant, new Room("Bagno"), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+            var report = new Report(tenant, "Auto-segnalazione");
+
+            // Act
+            var action = () => shift.AddReport(report);
+
+            // Assert
+            action.Should().Throw<SelfReportNotAllowedException>()
+                .Which.Code.Should().Be("Shift.SelfReportNotAllowed");
+            shift.Reports.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void MarkItemAsCompleted_Should_ThrowNotFound_When_ItemDoesNotExist()
+        {
+            // Arrange
+            var shift = new Shift(new Tenant("Salvo"), new Room("Bagno"), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+            var missingId = Guid.NewGuid();
+
+            // Act
+            var action = () => shift.MarkItemAsCompleted(missingId);
+
+            // Assert
+            action.Should().Throw<NotFoundException>()
+                .Which.Code.Should().Be("ShiftChecklistItem.NotFound");
         }
     }
 }

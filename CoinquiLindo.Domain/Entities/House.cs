@@ -1,4 +1,6 @@
-﻿namespace CoinquiLindo.Domain.Entities
+﻿using CoinquiLindo.Domain.Exceptions;
+
+namespace CoinquiLindo.Domain.Entities
 {
     public class House
     {
@@ -17,7 +19,7 @@
         {
             if(string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentException("House name cannot be null or empty.", nameof(name));
+                throw new DomainValidationException("House.NameRequired", "House name cannot be empty.");
             }
 
             Id = Guid.NewGuid();
@@ -38,7 +40,7 @@
             var name = room.Name.Trim();
             if (_rooms.Any(r => string.Equals(r.Name.Trim(), name, StringComparison.OrdinalIgnoreCase)))
             {
-                throw new InvalidOperationException($"A room named '{name}' already exists in this house.");
+                throw new RoomNameAlreadyExistsException(name);
             }
 
             _rooms.Add(room);

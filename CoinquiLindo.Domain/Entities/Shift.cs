@@ -1,4 +1,6 @@
-﻿namespace CoinquiLindo.Domain.Entities
+﻿using CoinquiLindo.Domain.Exceptions;
+
+namespace CoinquiLindo.Domain.Entities
 {
     public class Shift
     {
@@ -21,7 +23,7 @@
 
             if (endDate <= startDate)
             {
-                throw new ArgumentException("End date must be after start date.");
+                throw new DomainValidationException("Shift.InvalidDateRange", "End date must be after start date.");
             }
 
             Id = Guid.NewGuid();
@@ -42,7 +44,7 @@
             var item = _checklist.FirstOrDefault(i => i.Id == checklistId);
             if (item == null)
             {
-                throw new InvalidOperationException("Checklist item not found in this shift.");
+                throw new NotFoundException(nameof(ShiftChecklistItem), checklistId);
             }
 
             item.MarkAsCompleted();
@@ -54,7 +56,7 @@
 
             if(report.Reporter.Id == AssignedTenant.Id)
             {
-                throw new InvalidOperationException("You cannot add a report for yourself.");
+                throw new SelfReportNotAllowedException();
             }
 
             _reports.Add(report);

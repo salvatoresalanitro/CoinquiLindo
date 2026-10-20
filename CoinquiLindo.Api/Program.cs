@@ -1,4 +1,5 @@
 using CoinquiLindo.Api.Endpoints;
+using CoinquiLindo.Api.ErrorHandling;
 using CoinquiLindo.Application.Houses.Commands;
 using CoinquiLindo.Infrastructure;
 using Wolverine;
@@ -10,7 +11,16 @@ builder.Services.AddInfrastructure("Data Source=coinquilindo.db");
 builder.Host.UseWolverine(opts =>
     opts.Discovery.IncludeAssembly(typeof(CreateHouseCommand).Assembly));
 
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = ctx =>
+        ctx.ProblemDetails.Instance ??= $"{ctx.HttpContext.Request.Method} {ctx.HttpContext.Request.Path}");
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 var app = builder.Build();
+
+app.UseExceptionHandler();
+// Empty-body error responses (e.g. 404 from Results.NotFound, unknown routes) become ProblemDetails too
+app.UseStatusCodePages();
 
 // Endpoints mapping
 app.MapHouseEndpoints();
