@@ -1,0 +1,36 @@
+using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.RepositoriesInterfaces;
+
+namespace CoinquiLindo.Application.Houses.Commands
+{
+    public class AddRoomToHouseCommandHandler(IHouseRepository houseRepository)
+    {
+        public async Task<Guid> Handle(AddRoomToHouseCommand request, CancellationToken cancellationToken)
+        {
+            var house = await houseRepository.GetByIdAsync(request.HouseId, cancellationToken);
+
+            if (house == null)
+            {
+                throw new KeyNotFoundException($"House with ID {request.HouseId} not found.");
+            }
+
+            var room = new Room(request.Name?.Trim() ?? string.Empty);
+
+            var descriptions = request.CleaningTasks
+                .Where(d => !string.IsNullOrWhiteSpace(d))
+                .Select(d => d.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var description in descriptions)
+            {
+                room.AddCleaningTask(new CleaningTask(description));
+            }
+
+            house.AddRoom(room);
+
+            await houseRepository.UpdateAsync(house, cancellationToken);
+
+            return room.Id;
+        }
+    }
+}

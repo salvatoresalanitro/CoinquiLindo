@@ -15,7 +15,18 @@ namespace CoinquiLindo.Application.Houses.Queries
                 .Select(t => new TenantResponse(t.Id, t.Name))
                 .ToList();
 
-            return new HouseResponse(house.Id, house.Name, tenantsResponse);
+            var roomsResponse = house.Rooms
+                .OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(r => new RoomResponse(
+                    r.Id,
+                    r.Name,
+                    r.CleaningTasks
+                        .OrderBy(c => c.Description, StringComparer.OrdinalIgnoreCase)
+                        .Select(c => new CleaningTaskResponse(c.Id, c.Description))
+                        .ToList()))
+                .ToList();
+
+            return new HouseResponse(house.Id, house.Name, tenantsResponse, roomsResponse);
         }
     }
 }
