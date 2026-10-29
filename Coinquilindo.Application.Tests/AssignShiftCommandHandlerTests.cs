@@ -1,4 +1,4 @@
-﻿using CoinquiLindo.Application.Shifts.Commands;
+using CoinquiLindo.Application.Shifts.Commands;
 using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
@@ -20,13 +20,21 @@ namespace Coinquilindo.Application.Tests
             _handler = new AssignShiftCommandHandler(_mockHouseRepository, _mockShiftRepository);
         }
 
+        private static AssignShiftCommand Command(Guid houseId, Guid roomId, Guid tenantId, Guid requesterUserId) => new(
+            HouseId: houseId,
+            RoomId: roomId,
+            TenantId: tenantId,
+            StartDate: DateTime.UtcNow,
+            EndDate: DateTime.UtcNow.AddDays(7),
+            RequesterUserId: requesterUserId);
+
         [Fact]
         public async Task Handler_Should_CreateAndSaveShift_When_DataIsValid()
         {
             // Arrange
-            var house = new House("Stanza studenti");
+            var (house, member) = TestData.HouseWithMember("Stanza studenti");
             var room = new Room("Bagno");
-            var tenant = new Tenant("Salvo");
+            var tenant = new Tenant("Luca");
 
             room.AddCleaningTask(new CleaningTask("Pulire il lavandino"));
 
@@ -36,12 +44,8 @@ namespace Coinquilindo.Application.Tests
             _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>())
                 .Returns(house);
 
-            var startDate = DateTime.UtcNow;
-            var endDate = startDate.AddDays(7);
-            var command = new AssignShiftCommand(house.Id, room.Id, tenant.Id, startDate, endDate);
-
             // Act
-            var shiftId = await _handler.Handle(command, CancellationToken.None);
+            var shiftId = await _handler.Handle(Command(house.Id, room.Id, tenant.Id, member.Id), CancellationToken.None);
 
             // Assert
             shiftId.Should().NotBeEmpty();
@@ -55,7 +59,7 @@ namespace Coinquilindo.Application.Tests
         public async Task Handle_Should_ThrowException_WhenTenantNotInHouse()
         {
             // Arrange
-            var house = new House("Stanza studenti");
+            var (house, member) = TestData.HouseWithMember("Stanza studenti");
             var room = new Room("Bagno");
 
             house.AddRoom(room);
@@ -63,12 +67,8 @@ namespace Coinquilindo.Application.Tests
             _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>())
                 .Returns(house);
 
-            var startDate = DateTime.UtcNow;
-            var endDate = startDate.AddDays(7);
-            var command = new AssignShiftCommand(house.Id, room.Id, Guid.NewGuid(), startDate, endDate);
-
             // Act
-            Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
+            Func<Task> action = async () => await _handler.Handle(Command(house.Id, room.Id, Guid.NewGuid(), member.Id), CancellationToken.None);
 
             // Assert
             await action.Should().ThrowAsync<NotFoundException>()
@@ -81,17 +81,14 @@ namespace Coinquilindo.Application.Tests
         public async Task Handle_Should_ThrowNotFound_WhenRoomNotInHouse()
         {
             // Arrange
-            var house = new House("Stanza studenti");
-            var tenant = new Tenant("Salvo");
-            house.AddTenant(tenant);
+            var (house, member) = TestData.HouseWithMember("Stanza studenti");
+            var tenant = house.Tenants.Single();
 
             _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>())
                 .Returns(house);
 
-            var command = new AssignShiftCommand(house.Id, Guid.NewGuid(), tenant.Id, DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
-
             // Act
-            Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
+            Func<Task> action = async () => await _handler.Handle(Command(house.Id, Guid.NewGuid(), tenant.Id, member.Id), CancellationToken.None);
 
             // Assert
             await action.Should().ThrowAsync<NotFoundException>()
@@ -101,16 +98,34 @@ namespace Coinquilindo.Application.Tests
         [Fact]
         public async Task Handle_Should_ThrowNotFound_WhenHouseDoesNotExist()
         {
-            // Arrange
-            var command = new AssignShiftCommand(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
-
             // Act
-            Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
+            Func<Task> action = async () => await _handler.Handle(
+                Command(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()), CancellationToken.None);
 
             // Assert
             await action.Should().ThrowAsync<NotFoundException>()
                 .Where(e => e.Code == "House.NotFound");
 
+            await _mockShiftRepository.DidNotReceive().AddAsync(Arg.Any<Shift>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task Handle_Should_ThrowAccessDenied_WhenRequesterIsNotMember()
+        {
+            // Arrange
+            var (house, member) = TestData.HouseWithMember("Stanza studenti");
+            var room = new Room("Bagno");
+            house.AddRoom(room);
+            var tenant = house.Tenants.Single();
+
+            _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>())
+                .Returns(house);
+
+            // Act
+            Func<Task> action = async () => await _handler.Handle(Command(house.Id, room.Id, tenant.Id, Guid.NewGuid()), CancellationToken.None);
+
+            // Assert
+            await action.Should().ThrowAsync<NotHouseMemberException>();
             await _mockShiftRepository.DidNotReceive().AddAsync(Arg.Any<Shift>(), Arg.Any<CancellationToken>());
         }
     }

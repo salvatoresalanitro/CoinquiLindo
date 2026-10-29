@@ -20,7 +20,6 @@ namespace CoinquiLindo.Infrastructure.Migrations
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.CleaningTask", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
@@ -40,7 +39,6 @@ namespace CoinquiLindo.Infrastructure.Migrations
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.House", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
@@ -52,10 +50,41 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.ToTable("Houses");
                 });
 
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Report", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -86,7 +115,6 @@ namespace CoinquiLindo.Infrastructure.Migrations
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Room", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("HouseId")
@@ -106,7 +134,6 @@ namespace CoinquiLindo.Infrastructure.Migrations
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Shift", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("AssignedRoomId")
@@ -133,7 +160,6 @@ namespace CoinquiLindo.Infrastructure.Migrations
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.ShiftChecklistItem", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("CompletedAt")
@@ -159,7 +185,6 @@ namespace CoinquiLindo.Infrastructure.Migrations
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("HouseId")
@@ -169,11 +194,46 @@ namespace CoinquiLindo.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("HouseId");
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("HouseId", "UserId")
+                        .IsUnique()
+                        .HasFilter("\"UserId\" IS NOT NULL");
 
                     b.ToTable("Tenants");
+                });
+
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("GoogleSubject")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GoogleSubject")
+                        .IsUnique();
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.CleaningTask", b =>
@@ -181,6 +241,15 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.HasOne("CoinquiLindo.Domain.Entities.Room", null)
                         .WithMany("CleaningTasks")
                         .HasForeignKey("RoomId");
+                });
+
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("CoinquiLindo.Domain.Entities.User", null)
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Report", b =>
@@ -236,6 +305,11 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.HasOne("CoinquiLindo.Domain.Entities.House", null)
                         .WithMany("Tenants")
                         .HasForeignKey("HouseId");
+
+                    b.HasOne("CoinquiLindo.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.House", b =>
@@ -255,6 +329,11 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Navigation("Checklist");
 
                     b.Navigation("Reports");
+                });
+
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.User", b =>
+                {
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

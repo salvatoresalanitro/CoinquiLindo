@@ -1,5 +1,6 @@
-﻿using CoinquiLindo.Application.Houses.Queries;
+using CoinquiLindo.Application.Houses.Queries;
 using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 using FluentAssertions;
 using NSubstitute;
@@ -19,17 +20,16 @@ namespace Coinquilindo.Application.Tests
         }
 
         [Fact]
-        public async Task Handle_Should_Return_HouseDto_WhenHouseExists()
+        public async Task Handle_Should_Return_HouseDto_WhenRequesterIsMember()
         {
             // Arrange
-            var house = new House("Casa studenti");
-            var tenant = new Tenant("Salvo");
-            house.AddTenant(tenant);
+            var (house, member) = TestData.HouseWithMember();
+            house.AddTenant(new Tenant("Luca"));
 
             _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>())
                 .Returns(house);
 
-            var query = new GetHouseQuery(house.Id);
+            var query = new GetHouseQuery(HouseId: house.Id, RequesterUserId: member.Id);
 
             // Act
             var result = await _handler.Handle(query, CancellationToken.None);
@@ -38,14 +38,14 @@ namespace Coinquilindo.Application.Tests
             result.Should().NotBeNull();
             result!.Id.Should().Be(house.Id);
             result.Name.Should().Be(house.Name);
-            result.Tenants.Should().ContainSingle(t => t.Name == tenant.Name);
+            result.Tenants.Select(t => t.Name).Should().BeEquivalentTo("Salvo", "Luca");
         }
 
         [Fact]
         public async Task Handle_Should_Return_RoomsWithCleaningTasks_OrderedByName()
         {
             // Arrange
-            var house = new House("Casa studenti");
+            var (house, member) = TestData.HouseWithMember();
             var kitchen = new Room("Cucina");
             kitchen.AddCleaningTask(new CleaningTask("Pulire i fornelli"));
             kitchen.AddCleaningTask(new CleaningTask("Lavare i piatti"));
@@ -56,7 +56,7 @@ namespace Coinquilindo.Application.Tests
                 .Returns(house);
 
             // Act
-            var result = await _handler.Handle(new GetHouseQuery(house.Id), CancellationToken.None);
+            var result = await _handler.Handle(new GetHouseQuery(HouseId: house.Id, RequesterUserId: member.Id), CancellationToken.None);
 
             // Assert
             result!.Rooms.Select(r => r.Name).Should().Equal("Bagno", "Cucina");
@@ -70,7 +70,7 @@ namespace Coinquilindo.Application.Tests
         public async Task Handle_Should_ReturnNull_WhenHouseDoesNotExist()
         {
             // Arrange
-            var query = new GetHouseQuery(Guid.NewGuid());
+            var query = new GetHouseQuery(HouseId: Guid.NewGuid(), RequesterUserId: Guid.NewGuid());
 
             _mockHouseRepository.GetByIdAsync(query.HouseId, Arg.Any<CancellationToken>())
                 .ReturnsNull();
@@ -80,6 +80,23 @@ namespace Coinquilindo.Application.Tests
 
             // Assert
             result.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task Handle_Should_ThrowAccessDenied_WhenRequesterIsNotMember()
+        {
+            // Arrange
+            var (house, _) = TestData.HouseWithMember();
+            _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
+
+            var query = new GetHouseQuery(HouseId: house.Id, RequesterUserId: Guid.NewGuid());
+
+            // Act
+            Func<Task> action = async () => await _handler.Handle(query, CancellationToken.None);
+
+            // Assert
+            await action.Should().ThrowAsync<NotHouseMemberException>()
+                .Where(e => e.Code == "House.AccessDenied");
         }
     }
 }

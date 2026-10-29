@@ -1,17 +1,54 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject AuthClient AuthClient
+@inject SecureTokenStore TokenStore
+@inject NavigationManager Navigation
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
+@if (isCheckingSession)
+{
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="spinner-border text-primary" role="status" aria-label="Caricamento"></div>
     </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+}
+else
+{
+    <div class="page">
+        <div class="sidebar">
+            <NavMenu />
         </div>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+        <main>
+            <div class="top-row px-4">
+                <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            </div>
+
+            <article class="content px-4">
+                @Body
+            </article>
+        </main>
+    </div>
+}
+
+@code {
+    private bool isCheckingSession = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        TokenStore.SessionEnded += OnSessionEnded;
+
+        if (!await AuthClient.IsSignedInAsync())
+        {
+            GoToLogin();
+            return;
+        }
+
+        isCheckingSession = false;
+    }
+
+    // Raised from the HTTP pipeline (refresh rejected) or by logout: may not run on the renderer thread
+    private void OnSessionEnded() => _ = InvokeAsync(GoToLogin);
+
+    private void GoToLogin() => Navigation.NavigateTo("/login", replace: true);
+
+    public void Dispose() => TokenStore.SessionEnded -= OnSessionEnded;
+}

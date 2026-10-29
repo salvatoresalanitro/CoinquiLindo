@@ -62,6 +62,32 @@ namespace CoinquiLindo.Architecture.Tests.Layers
         }
 
         [Fact]
+        public void ApiLayer_ShouldNot_DependOn_DbContextOrRepositories()
+        {
+            var result = Types.InAssembly(typeof(Api.ErrorHandling.GlobalExceptionHandler).Assembly)
+                .ShouldNot()
+                .HaveDependencyOnAny("CoinquiLindo.Infrastructure.AppDbContext", "CoinquiLindo.Infrastructure.Repositories")
+                .GetResult();
+
+            result.IsSuccessful.Should().BeTrue(
+                "endpoints must only translate HTTP to Wolverine messages. Offending types: {0}",
+                string.Join(", ", result.FailingTypeNames ?? []));
+        }
+
+        [Fact]
+        public void ApplicationLayer_ShouldNot_DependOn_TokenOrWebFrameworks()
+        {
+            var result = Types.InAssembly(typeof(Application.Houses.Commands.CreateHouseCommand).Assembly)
+                .ShouldNot()
+                .HaveDependencyOnAny("Microsoft.IdentityModel", "System.IdentityModel", "Microsoft.AspNetCore")
+                .GetResult();
+
+            result.IsSuccessful.Should().BeTrue(
+                "token issuing must stay behind IAuthTokenService. Offending types: {0}",
+                string.Join(", ", result.FailingTypeNames ?? []));
+        }
+
+        [Fact]
         public void DomainExceptions_Should_InheritFromDomainException()
         {
             var result = Types.InAssembly(typeof(Domain.Entities.House).Assembly)

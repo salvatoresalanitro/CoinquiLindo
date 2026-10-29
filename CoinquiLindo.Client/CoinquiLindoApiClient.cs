@@ -39,6 +39,30 @@ namespace CoinquiLindo.Client
             return error is null ? ApiResult<Guid>.Success(value) : ApiResult<Guid>.Failure(error);
         }
 
+        public async Task<ApiResult<MeResponse>> GetMeAsync(CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<MeResponse>(
+                ct => httpClient.GetAsync("/api/me", ct), readBody: true, cancellationToken);
+
+            return error is null ? ApiResult<MeResponse>.Success(value!) : ApiResult<MeResponse>.Failure(error);
+        }
+
+        public async Task<ApiResult<AuthResponse>> DevLoginAsync(string email, string displayName, CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<AuthResponse>(
+                ct => httpClient.PostAsJsonAsync("/api/auth/dev-login", new DevLoginRequest(email, displayName), ct), readBody: true, cancellationToken);
+
+            return error is null ? ApiResult<AuthResponse>.Success(value!) : ApiResult<AuthResponse>.Failure(error);
+        }
+
+        public async Task<ApiResult> LogoutAsync(string refreshToken, CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.PostAsJsonAsync("/api/auth/logout", new RefreshTokenRequest(refreshToken), ct), readBody: false, cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
         private async Task<(T? Value, ApiError? Error)> SendAsync<T>(
             Func<CancellationToken, Task<HttpResponseMessage>> send, bool readBody, CancellationToken cancellationToken)
         {

@@ -45,5 +45,18 @@
     </dict>
     <key>XSAppIconAssets</key>
     <string>Assets.xcassets/appicon.appiconset</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.companyname.coinquilindo.mobile.auth</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>coinquilindo</string>
+            </array>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+        </dict>
+    </array>
 </dict>
 </plist>

@@ -114,6 +114,70 @@ namespace CoinquiLindo.Infrastructure.Tests
             return house.Id;
         }
 
+        [Fact]
+        public async Task AddAsync_Should_PersistMemberLinkedToUser()
+        {
+            // Arrange
+            var user = await SeedUserAsync("google-sub-1");
+            var house = new House("Casa Studenti");
+            house.AddMember(user);
+
+            // Act
+            await using (var context = CreateContext())
+            {
+                await new HouseRepository(context).AddAsync(house);
+            }
+
+            // Assert
+            await using var assertContext = CreateContext();
+            var persisted = await new HouseRepository(assertContext).GetByIdAsync(house.Id);
+
+            persisted!.IsMember(user.Id).Should().BeTrue();
+            persisted.Tenants.Should().ContainSingle(t => t.UserId == user.Id && t.Name == user.DisplayName);
+        }
+
+        [Fact]
+        public async Task GetByMemberAsync_Should_ReturnOnlyHousesWhereUserIsMember()
+        {
+            // Arrange
+            var user = await SeedUserAsync("google-sub-1");
+            var other = await SeedUserAsync("google-sub-2");
+
+            var mine = new House("Casa mia");
+            mine.AddMember(user);
+            var shared = new House("Casa condivisa");
+            shared.AddMember(other);
+            shared.AddMember(user);
+            var notMine = new House("Casa altrui");
+            notMine.AddMember(other);
+            notMine.AddTenant(new Tenant("Omonimo senza account"));
+
+            await using (var seedContext = CreateContext())
+            {
+                var seedRepository = new HouseRepository(seedContext);
+                await seedRepository.AddAsync(mine);
+                await seedRepository.AddAsync(shared);
+                await seedRepository.AddAsync(notMine);
+            }
+
+            // Act
+            await using var context = CreateContext();
+            var houses = await new HouseRepository(context).GetByMemberAsync(user.Id);
+
+            // Assert
+            houses.Select(h => h.Id).Should().BeEquivalentTo([mine.Id, shared.Id]);
+        }
+
+        private async Task<User> SeedUserAsync(string googleSubject)
+        {
+            var user = new User(googleSubject, $"{googleSubject}@gmail.com", googleSubject);
+
+            await using var context = CreateContext();
+            await new UserRepository(context).AddAsync(user);
+
+            return user;
+        }
+
         public void Dispose() => _connection.Dispose();
     }
 }

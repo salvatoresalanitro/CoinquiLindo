@@ -11,6 +11,8 @@ namespace CoinquiLindo.Application.Shifts.Commands
             var house = await houseRepository.GetByIdAsync(request.HouseId, cancellationToken)
                 ?? throw new NotFoundException(nameof(House), request.HouseId);
 
+            house.EnsureIsMember(request.RequesterUserId);
+
             var tenant = house.Tenants.FirstOrDefault(t => t.Id == request.TenantId)
                 ?? throw new NotFoundException(nameof(Tenant), request.TenantId);
 

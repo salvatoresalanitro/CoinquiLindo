@@ -11,6 +11,8 @@ namespace CoinquiLindo.Application.Houses.Commands
             var house = await houseRepository.GetByIdAsync(request.HouseId, cancellationToken)
                 ?? throw new NotFoundException(nameof(House), request.HouseId);
 
+            house.EnsureIsMember(request.RequesterUserId);
+
             var room = new Room(request.Name?.Trim() ?? string.Empty);
 
             var descriptions = request.CleaningTasks

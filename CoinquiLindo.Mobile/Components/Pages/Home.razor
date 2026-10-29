@@ -1,13 +1,63 @@
-﻿@page "/"
+@page "/"
 @inject CoinquiLindoApiClient ApiClient
+@inject AuthClient AuthClient
 @inject NavigationManager Navigation
 
-<div class="container text-center mt-5 p-3">
-    <h1>🧹 CoinquiLindo</h1>
-    <p class="lead mt-3">Patti chiari, casa pulita.</p>
+<div class="container mt-4 p-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 mb-0">🧹 CoinquiLindo</h1>
+            @if (me is not null)
+            {
+                <p class="text-muted mb-0">Ciao, @me.DisplayName!</p>
+            }
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="HandleLogout" disabled="@isLoggingOut">
+            @if (isLoggingOut)
+            {
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            }
+            else
+            {
+                <span>Esci</span>
+            }
+        </button>
+    </div>
 
-    <div class="card mt-5 p-4 shadow-sm">
-        <h3>Nuova Casa</h3>
+    <div class="card mt-4 p-4 shadow-sm">
+        <h3 class="h5">Le tue case</h3>
+
+        @if (isLoadingMe)
+        {
+            <div class="text-center py-3">
+                <div class="spinner-border text-primary" role="status" aria-label="Caricamento"></div>
+            </div>
+        }
+        else if (me is null)
+        {
+            <ErrorAlert Error="loadError" OnRetry="LoadMe" />
+        }
+        else if (me.Houses.Count == 0)
+        {
+            <p class="text-muted mb-0">Non fai ancora parte di nessuna casa. Creane una qui sotto!</p>
+        }
+        else
+        {
+            <div class="list-group">
+                @foreach (var house in me.Houses)
+                {
+                    <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                            @onclick="@(() => Navigation.NavigateTo($"/house/{house.Id}"))">
+                        <span>🏠 @house.Name</span>
+                        <span aria-hidden="true">›</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="card mt-4 p-4 shadow-sm">
+        <h3 class="h5">Nuova Casa</h3>
 
         <input type="text" class="form-control mt-3"
                placeholder="Es: Appartamento Milano"
@@ -38,6 +88,37 @@
     private bool isLoading = false;
     private ApiError? error;
 
+    private MeResponse? me;
+    private bool isLoadingMe = true;
+    private ApiError? loadError;
+    private bool isLoggingOut;
+
+    protected override Task OnInitializedAsync() => LoadMe();
+
+    private async Task LoadMe()
+    {
+        isLoadingMe = true;
+        loadError = null;
+
+        var result = await ApiClient.GetMeAsync();
+
+        isLoadingMe = false;
+
+        if (result.IsSuccess)
+        {
+            me = result.Value;
+        }
+        else if (result.Error.ErrorCode is "User.NotFound" or "Auth.Unauthorized")
+        {
+            // Account removed or session no longer valid: logout redirects to the login page
+            await AuthClient.LogoutAsync();
+        }
+        else
+        {
+            loadError = result.Error;
+        }
+    }
+
     private async Task HandleCreateHouse()
     {
         if (string.IsNullOrWhiteSpace(houseName)) return;
@@ -57,5 +138,12 @@
         {
             error = result.Error;
         }
+    }
+
+    private async Task HandleLogout()
+    {
+        isLoggingOut = true;
+        await AuthClient.LogoutAsync();
+        isLoggingOut = false;
     }
 }

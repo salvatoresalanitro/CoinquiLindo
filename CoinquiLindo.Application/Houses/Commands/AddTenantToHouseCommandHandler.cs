@@ -10,6 +10,8 @@ namespace CoinquiLindo.Application.Houses.Commands
             var house = await houseRepository.GetByIdAsync(request.HouseId, cancellationToken)
                 ?? throw new NotFoundException(nameof(House), request.HouseId);
 
+            house.EnsureIsMember(request.RequesterUserId);
+
             var newTenant = new Tenant(request.TenantName);
 
             house.AddTenant(newTenant);

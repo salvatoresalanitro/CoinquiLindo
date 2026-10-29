@@ -1,3 +1,4 @@
+using CoinquiLindo.Api.Auth;
 using CoinquiLindo.Api.Endpoints;
 using CoinquiLindo.Api.ErrorHandling;
 using CoinquiLindo.Application.Houses.Commands;
@@ -8,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddInfrastructure("Data Source=coinquilindo.db");
+builder.Services.AddCoinquiLindoAuthentication(builder.Configuration);
 builder.Host.UseWolverine(opts =>
     opts.Discovery.IncludeAssembly(typeof(CreateHouseCommand).Assembly));
 
@@ -22,7 +24,12 @@ app.UseExceptionHandler();
 // Empty-body error responses (e.g. 404 from Results.NotFound, unknown routes) become ProblemDetails too
 app.UseStatusCodePages();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Endpoints mapping
+app.MapAuthEndpoints();
+app.MapUserEndpoints();
 app.MapHouseEndpoints();
 app.MapShiftEndpoints();
 

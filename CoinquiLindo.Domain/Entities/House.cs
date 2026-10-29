@@ -33,6 +33,31 @@ namespace CoinquiLindo.Domain.Entities
             _tenants.Add(tenant);
         }
 
+        public Tenant AddMember(User user)
+        {
+            ArgumentNullException.ThrowIfNull(user, nameof(user));
+
+            if (IsMember(user.Id))
+            {
+                throw new UserAlreadyMemberException();
+            }
+
+            var tenant = new Tenant(user);
+            _tenants.Add(tenant);
+
+            return tenant;
+        }
+
+        public bool IsMember(Guid userId) => _tenants.Any(t => t.UserId == userId);
+
+        public void EnsureIsMember(Guid userId)
+        {
+            if (!IsMember(userId))
+            {
+                throw new NotHouseMemberException();
+            }
+        }
+
         public void AddRoom(Room room)
         {
             ArgumentNullException.ThrowIfNull(room, nameof(room));

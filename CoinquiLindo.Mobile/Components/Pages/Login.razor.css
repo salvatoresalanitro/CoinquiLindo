@@ -1,0 +1,141 @@
+.login-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2rem;
+    padding: calc(env(safe-area-inset-top) + 2rem) 1.25rem calc(env(safe-area-inset-bottom) + 2rem);
+    background: radial-gradient(circle at 15% 10%, #8b5cf6 0%, transparent 45%),
+                radial-gradient(circle at 85% 30%, #06b6d4 0%, transparent 40%),
+                linear-gradient(160deg, #312e81 0%, #1e1b4b 100%);
+    color: #fff;
+}
+
+.login-hero {
+    text-align: center;
+    animation: fade-up 0.6s ease-out both;
+}
+
+.login-logo {
+    width: 84px;
+    height: 84px;
+    margin: 0 auto 1rem;
+    display: grid;
+    place-items: center;
+    font-size: 2.6rem;
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+.login-title {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+}
+
+.login-tagline {
+    opacity: 0.8;
+    margin: 0;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 1.75rem 1.5rem;
+    border-radius: 28px;
+    background: #fff;
+    color: #1f2937;
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.35);
+    animation: fade-up 0.6s 0.1s ease-out both;
+}
+
+.login-card-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.login-card-subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+}
+
+.btn-google {
+    width: 100%;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    border: 1px solid #dadce0;
+    border-radius: 14px;
+    background: #fff;
+    color: #3c4043;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-google:hover:not(:disabled) {
+    background: #f8f9fa;
+    box-shadow: 0 4px 14px rgba(60, 64, 67, 0.15);
+}
+
+.btn-google:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.btn-google:disabled {
+    opacity: 0.7;
+}
+
+.google-icon {
+    width: 22px;
+    height: 22px;
+}
+
+.dev-login {
+    margin-top: 1.5rem;
+}
+
+.dev-login-divider {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    color: #9ca3af;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.dev-login-divider::before,
+.dev-login-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+@keyframes fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .login-hero,
+    .login-card {
+        animation: none;
+    }
+}

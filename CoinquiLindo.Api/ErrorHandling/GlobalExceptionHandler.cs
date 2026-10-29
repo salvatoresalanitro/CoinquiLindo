@@ -17,6 +17,8 @@ namespace CoinquiLindo.Api.ErrorHandling
                 NotFoundException e => (StatusCodes.Status404NotFound, "Resource not found", e.Code, e.Message),
                 ConflictException e => (StatusCodes.Status409Conflict, "Conflict", e.Code, e.Message),
                 BusinessRuleViolationException e => (StatusCodes.Status422UnprocessableEntity, "Business rule violated", e.Code, e.Message),
+                AuthenticationFailedException e => (StatusCodes.Status401Unauthorized, "Unauthorized", e.Code, e.Message),
+                AccessDeniedException e => (StatusCodes.Status403Forbidden, "Forbidden", e.Code, e.Message),
                 DomainException e => (StatusCodes.Status400BadRequest, "Domain error", e.Code, e.Message),
                 BadHttpRequestException e => (e.StatusCode, "Bad request", "General.BadRequest", "The request is malformed or contains invalid values."),
                 // Never expose internal messages for unexpected failures

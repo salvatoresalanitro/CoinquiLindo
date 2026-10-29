@@ -5,6 +5,7 @@
         Guid RoomId,
         Guid TenantId,
         DateTime StartDate,
-        DateTime EndDate
+        DateTime EndDate,
+        Guid RequesterUserId
     );
 }

@@ -19,6 +19,14 @@ namespace CoinquiLindo.Client
             ["Shift.InvalidDateRange"] = "La data di fine turno deve essere successiva a quella di inizio.",
             ["Shift.SelfReportNotAllowed"] = "Non puoi segnalare un tuo turno.",
             ["ShiftChecklistItem.NotFound"] = "L'attività del turno non esiste più.",
+            ["House.AccessDenied"] = "Non fai parte di questa casa.",
+            ["House.UserAlreadyMember"] = "Fai già parte di questa casa.",
+            ["User.NotFound"] = "Il tuo account non è più disponibile. Accedi di nuovo.",
+            ["User.GoogleSubjectRequired"] = "Accesso con Google non riuscito. Riprova.",
+            ["User.EmailRequired"] = "Il tuo account Google non ha un'email associata.",
+            ["Auth.Unauthorized"] = "La sessione è scaduta. Accedi di nuovo.",
+            ["Auth.InvalidRefreshToken"] = "La sessione è scaduta. Accedi di nuovo.",
+            [AuthClient.SignInFailedCode] = "Accesso con Google non completato. Riprova.",
             ["General.BadRequest"] = "La richiesta non è valida. Controlla i dati inseriti.",
             ["General.Unexpected"] = "Si è verificato un errore imprevisto sul server. Riprova tra poco.",
             [ApiError.NetworkUnavailableCode] = "Impossibile contattare il server. Controlla la connessione e riprova.",
@@ -34,6 +42,8 @@ namespace CoinquiLindo.Client
             return status switch
             {
                 400 => "Dati non validi. Controlla i campi inseriti.",
+                401 => "Devi accedere per continuare.",
+                403 => "Non hai i permessi per questa operazione.",
                 404 => "Elemento non trovato.",
                 409 => "L'operazione è in conflitto con dati già esistenti.",
                 422 => "Operazione non consentita.",
