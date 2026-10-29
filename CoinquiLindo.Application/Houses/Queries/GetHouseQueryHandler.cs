@@ -11,6 +11,8 @@ namespace CoinquiLindo.Application.Houses.Queries
 
             if (house == null) return null;
 
+            house.EnsureIsMember(request.RequesterUserId);
+
             var tenantsResponse = house.Tenants
                 .Select(t => new TenantResponse(t.Id, t.Name))
                 .ToList();

@@ -23,10 +23,14 @@ namespace Coinquilindo.Application.Tests
         public async Task Handle_Should_AddRoomWithCleaningTasks_And_CallUpdate_WhenHouseExists()
         {
             // Arrange
-            var house = new House("Casa studenti");
+            var (house, member) = TestData.HouseWithMember();
             _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
 
-            var command = new AddRoomToHouseCommand(house.Id, "Bagno", ["Pulire il lavandino", "Lavare la doccia"]);
+            var command = new AddRoomToHouseCommand(
+                HouseId: house.Id,
+                Name: "Bagno",
+                CleaningTasks: ["Pulire il lavandino", "Lavare la doccia"],
+                RequesterUserId: member.Id);
 
             // Act
             var roomId = await _handler.Handle(command, CancellationToken.None);
@@ -45,11 +49,14 @@ namespace Coinquilindo.Application.Tests
         public async Task Handle_Should_DiscardBlankAndDuplicateCleaningTasks()
         {
             // Arrange
-            var house = new House("Casa studenti");
+            var (house, member) = TestData.HouseWithMember();
             _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
 
-            var command = new AddRoomToHouseCommand(house.Id, "Cucina",
-                ["Lavare i piatti", "", "   ", " lavare i piatti ", "Pulire i fornelli"]);
+            var command = new AddRoomToHouseCommand(
+                HouseId: house.Id,
+                Name: "Cucina",
+                CleaningTasks: ["Lavare i piatti", "", "   ", " lavare i piatti ", "Pulire i fornelli"],
+                RequesterUserId: member.Id);
 
             // Act
             await _handler.Handle(command, CancellationToken.None);
@@ -60,10 +67,10 @@ namespace Coinquilindo.Application.Tests
         }
 
         [Fact]
-        public async Task Handle_Should_ThrowKeyNotFound_WhenHouseDoesNotExist()
+        public async Task Handle_Should_ThrowNotFound_WhenHouseDoesNotExist()
         {
             // Arrange
-            var command = new AddRoomToHouseCommand(Guid.NewGuid(), "Bagno", []);
+            var command = new AddRoomToHouseCommand(HouseId: Guid.NewGuid(), Name: "Bagno", CleaningTasks: [], RequesterUserId: Guid.NewGuid());
             _mockHouseRepository.GetByIdAsync(command.HouseId, Arg.Any<CancellationToken>()).ReturnsNull();
 
             // Act
@@ -80,17 +87,35 @@ namespace Coinquilindo.Application.Tests
         public async Task Handle_Should_NotCallUpdate_WhenRoomNameAlreadyExists()
         {
             // Arrange
-            var house = new House("Casa studenti");
+            var (house, member) = TestData.HouseWithMember();
             house.AddRoom(new Room("Bagno"));
             _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
 
-            var command = new AddRoomToHouseCommand(house.Id, "bagno", []);
+            var command = new AddRoomToHouseCommand(HouseId: house.Id, Name: "bagno", CleaningTasks: [], RequesterUserId: member.Id);
 
             // Act
             Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
 
             // Assert
             await action.Should().ThrowAsync<RoomNameAlreadyExistsException>();
+            await _mockHouseRepository.DidNotReceive().UpdateAsync(Arg.Any<House>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task Handle_Should_ThrowAccessDenied_WhenRequesterIsNotMember()
+        {
+            // Arrange
+            var (house, _) = TestData.HouseWithMember();
+            _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
+
+            var command = new AddRoomToHouseCommand(HouseId: house.Id, Name: "Bagno", CleaningTasks: [], RequesterUserId: Guid.NewGuid());
+
+            // Act
+            Func<Task> action = async () => await _handler.Handle(command, CancellationToken.None);
+
+            // Assert
+            await action.Should().ThrowAsync<NotHouseMemberException>();
+            house.Rooms.Should().BeEmpty();
             await _mockHouseRepository.DidNotReceive().UpdateAsync(Arg.Any<House>(), Arg.Any<CancellationToken>());
         }
     }

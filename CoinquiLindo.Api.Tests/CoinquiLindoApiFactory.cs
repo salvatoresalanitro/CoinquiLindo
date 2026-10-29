@@ -22,8 +22,19 @@ namespace CoinquiLindo.Api.Tests
             _connection.Open();
         }
 
+        public const string JwtSigningKey = "integration-tests-signing-key-32-bytes-min!!";
+        public const string MobileCallbackUri = "coinquilindo://auth";
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            // Secrets come from user-secrets in dev: tests provide fake values
+            builder.UseSetting("Auth:Jwt:Issuer", "coinquilindo-api");
+            builder.UseSetting("Auth:Jwt:Audience", "coinquilindo-mobile");
+            builder.UseSetting("Auth:Jwt:SigningKey", JwtSigningKey);
+            builder.UseSetting("Auth:Google:ClientId", "test-client-id.apps.googleusercontent.com");
+            builder.UseSetting("Auth:Google:ClientSecret", "test-client-secret");
+            builder.UseSetting("Auth:MobileCallbackUri", MobileCallbackUri);
+
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<DbContextOptions<AppDbContext>>();

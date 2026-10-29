@@ -16,13 +16,16 @@ namespace CoinquiLindo.Api.Tests
             { new NotFoundException("House", Guid.NewGuid()), HttpStatusCode.NotFound, "House.NotFound" },
             { new RoomNameAlreadyExistsException("Cucina"), HttpStatusCode.Conflict, "House.RoomNameAlreadyExists" },
             { new SelfReportNotAllowedException(), HttpStatusCode.UnprocessableEntity, "Shift.SelfReportNotAllowed" },
+            { new UserAlreadyMemberException(), HttpStatusCode.Conflict, "House.UserAlreadyMember" },
+            { new NotHouseMemberException(), HttpStatusCode.Forbidden, "House.AccessDenied" },
+            { new InvalidRefreshTokenException(), HttpStatusCode.Unauthorized, "Auth.InvalidRefreshToken" },
         };
 
         [Theory]
         [MemberData(nameof(MappedExceptions))]
         public async Task DomainExceptions_Should_BeMappedToProblemDetails(Exception exception, HttpStatusCode expectedStatus, string expectedCode)
         {
-            var client = CreateClientThrowing(exception);
+            var client = await CreateClientThrowingAsync(exception);
 
             var response = await client.GetAsync($"/api/houses/{Guid.NewGuid()}");
 
@@ -36,7 +39,7 @@ namespace CoinquiLindo.Api.Tests
         [Fact]
         public async Task UnexpectedException_Should_Return500_WithoutLeakingDetails()
         {
-            var client = CreateClientThrowing(new InvalidOperationException("Sensitive: Data Source=secret.db"));
+            var client = await CreateClientThrowingAsync(new InvalidOperationException("Sensitive: Data Source=secret.db"));
 
             var response = await client.GetAsync($"/api/houses/{Guid.NewGuid()}");
 
@@ -46,12 +49,12 @@ namespace CoinquiLindo.Api.Tests
             problem.RawBody.Should().NotContain("Sensitive").And.NotContain("secret.db").And.NotContain("InvalidOperationException");
         }
 
-        private HttpClient CreateClientThrowing(Exception exception) =>
+        private Task<HttpClient> CreateClientThrowingAsync(Exception exception) =>
             factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
             {
                 services.AddSingleton(new ExceptionToThrow(exception));
                 services.AddScoped<IHouseRepository, ThrowingHouseRepository>();
-            })).CreateClient();
+            })).CreateAuthenticatedClientAsync();
 
         public sealed record ExceptionToThrow(Exception Exception);
 
@@ -60,6 +63,7 @@ namespace CoinquiLindo.Api.Tests
         {
             public Task AddAsync(House house, CancellationToken cancellationToken = default) => throw toThrow.Exception;
             public Task<House?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => throw toThrow.Exception;
+            public Task<IReadOnlyList<House>> GetByMemberAsync(Guid userId, CancellationToken cancellationToken = default) => throw toThrow.Exception;
             public Task UpdateAsync(House house, CancellationToken cancellationToken = default) => throw toThrow.Exception;
         }
     }

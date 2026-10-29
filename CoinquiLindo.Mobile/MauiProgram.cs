@@ -1,4 +1,5 @@
 ﻿using CoinquiLindo.Client;
+using CoinquiLindo.Mobile.Services;
 using Microsoft.Extensions.Logging;
 
 namespace CoinquiLindo.Mobile
@@ -26,8 +27,17 @@ namespace CoinquiLindo.Mobile
             ? "http://10.0.2.2:5273"
             : "http://localhost:5273";
 
-            // add http client
-            builder.Services.AddScoped(sp => new HttpClient
+            // Session: tokens in SecureStorage, Bearer attached (and refreshed) by a single shared handler
+            builder.Services.AddSingleton(TimeProvider.System);
+            builder.Services.AddSingleton<SecureTokenStore>();
+            builder.Services.AddSingleton<ITokenStore>(sp => sp.GetRequiredService<SecureTokenStore>());
+            builder.Services.AddSingleton(sp => new AuthTokenHandler(sp.GetRequiredService<ITokenStore>(), sp.GetRequiredService<TimeProvider>())
+            {
+                InnerHandler = new HttpClientHandler()
+            });
+
+            // add http client (the shared handler must outlive each scoped HttpClient)
+            builder.Services.AddScoped(sp => new HttpClient(sp.GetRequiredService<AuthTokenHandler>(), disposeHandler: false)
             {
                 BaseAddress = new Uri(apiBaseAddress),
                 Timeout = TimeSpan.FromSeconds(15)
@@ -35,6 +45,7 @@ namespace CoinquiLindo.Mobile
 
             // add our services
             builder.Services.AddScoped<CoinquiLindoApiClient>();
+            builder.Services.AddScoped<AuthClient>();
 
             return builder.Build();
         }

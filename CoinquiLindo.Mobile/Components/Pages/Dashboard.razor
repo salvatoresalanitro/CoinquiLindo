@@ -12,8 +12,8 @@
     }
     else if (house == null)
     {
-        @* A missing house cannot be fixed by retrying; network/server errors can *@
-        <ErrorAlert Error="loadError" OnRetry="@(loadError?.Status == 404 ? default : EventCallback.Factory.Create(this, LoadHouseData))" />
+        @* A missing or forbidden house cannot be fixed by retrying; network/server errors can *@
+        <ErrorAlert Error="loadError" OnRetry="@(loadError?.Status is 403 or 404 ? default : EventCallback.Factory.Create(this, LoadHouseData))" />
     }
     else
     {

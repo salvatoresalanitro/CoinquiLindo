@@ -6,9 +6,13 @@ using FluentAssertions;
 
 namespace CoinquiLindo.Api.Tests
 {
-    public class ErrorHandlingTests(CoinquiLindoApiFactory factory) : IClassFixture<CoinquiLindoApiFactory>
+    public class ErrorHandlingTests(CoinquiLindoApiFactory factory) : IClassFixture<CoinquiLindoApiFactory>, IAsyncLifetime
     {
-        private readonly HttpClient _client = factory.CreateClient();
+        private HttpClient _client = null!;
+
+        public async Task InitializeAsync() => _client = await factory.CreateAuthenticatedClientAsync();
+
+        public Task DisposeAsync() => Task.CompletedTask;
 
         [Fact]
         public async Task AddTenant_Should_Return404Problem_When_HouseDoesNotExist()
@@ -25,7 +29,7 @@ namespace CoinquiLindo.Api.Tests
         [Fact]
         public async Task AddRoom_Should_Return409Problem_When_RoomNameAlreadyExists()
         {
-            var houseId = await CreateHouseAsync();
+            var houseId = await _client.CreateHouseAsync();
             await _client.PostAsJsonAsync($"/api/houses/{houseId}/rooms", new AddRoomRequest("Cucina", null));
 
             var response = await _client.PostAsJsonAsync($"/api/houses/{houseId}/rooms", new AddRoomRequest(" cucina ", null));
@@ -57,20 +61,13 @@ namespace CoinquiLindo.Api.Tests
         [Fact]
         public async Task AssignShift_Should_Return404Problem_When_TenantNotInHouse()
         {
-            var houseId = await CreateHouseAsync();
+            var houseId = await _client.CreateHouseAsync();
             var request = new AssignShiftRequest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
 
             var response = await _client.PostAsJsonAsync($"/api/houses/{houseId}/shifts", request);
 
             var problem = await response.ReadProblemAsync(HttpStatusCode.NotFound);
             problem.ErrorCode.Should().Be("Tenant.NotFound");
-        }
-
-        private async Task<Guid> CreateHouseAsync()
-        {
-            var response = await _client.PostAsJsonAsync("/api/houses", new CreateHouseRequest("Casa Test"));
-            response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<Guid>();
         }
     }
 }

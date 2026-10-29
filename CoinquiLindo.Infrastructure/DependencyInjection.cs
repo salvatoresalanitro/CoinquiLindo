@@ -1,7 +1,10 @@
-﻿using CoinquiLindo.Domain.RepositoriesInterfaces;
+using CoinquiLindo.Application.Auth;
+using CoinquiLindo.Domain.RepositoriesInterfaces;
+using CoinquiLindo.Infrastructure.Auth;
 using CoinquiLindo.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CoinquiLindo.Infrastructure
 {
@@ -16,6 +19,11 @@ namespace CoinquiLindo.Infrastructure
 
             services.AddScoped<IHouseRepository, HouseRepository>();
             services.AddScoped<IShiftRepository, ShiftRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+
+            // JwtOptions are bound by the host (Api) from configuration
+            services.TryAddSingleton(TimeProvider.System);
+            services.AddSingleton<IAuthTokenService, JwtAuthTokenService>();
 
             return services;
         }
