@@ -78,4 +78,32 @@
       <ProjectReference Include="..\CoinquiLindo.Shared\CoinquiLindo.Shared.csproj" />
     </ItemGroup>
 
+    <!-- API endpoint per build configuration, read at runtime by Services/ApiSettings.
+         Override locally (e.g. a Dev Tunnels https URL) in the git-ignored CoinquiLindo.Mobile.csproj.user -->
+    <PropertyGroup>
+        <ApiBaseUrl Condition="'$(ApiBaseUrl)' == '' And '$(Configuration)' == 'Debug'">http://localhost:5273</ApiBaseUrl>
+        <ApiBaseUrl Condition="'$(ApiBaseUrl)' == ''">https://api.coinquilindo.app</ApiBaseUrl>
+
+        <!-- Android: Debug allows cleartext only towards localhost (adb reverse); any other build is HTTPS-only -->
+        <AndroidManifestPlaceholders Condition="'$(Configuration)' == 'Debug'">networkSecurityConfig=@xml/network_security_config_debug</AndroidManifestPlaceholders>
+        <AndroidManifestPlaceholders Condition="'$(Configuration)' != 'Debug'">networkSecurityConfig=@xml/network_security_config</AndroidManifestPlaceholders>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <AssemblyMetadata Include="ApiBaseUrl" Value="$(ApiBaseUrl)" />
+    </ItemGroup>
+
+    <Target Name="CoinquiLindoValidateApiBaseUrl" BeforeTargets="CoreCompile" Condition="'$(Configuration)' != 'Debug' And !$(ApiBaseUrl.StartsWith('https://'))">
+        <Error Text="ApiBaseUrl must use https:// outside Debug builds (current value: '$(ApiBaseUrl)')." />
+    </Target>
+
+    <!-- Android emulator/device in Debug: forward the device's localhost:<port> to the API running on this PC -->
+    <Target Name="CoinquiLindoAdbReverse" AfterTargets="Install"
+            Condition="'$(Configuration)' == 'Debug' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' And $(ApiBaseUrl.StartsWith('http://localhost:'))">
+        <PropertyGroup>
+            <_CoinquiLindoApiPort>$([System.Text.RegularExpressions.Regex]::Replace('$(ApiBaseUrl)', '^http://localhost:(\d+).*$', '$1'))</_CoinquiLindoApiPort>
+        </PropertyGroup>
+        <Exec Command="&quot;$(_AndroidPlatformToolsDirectory)adb&quot; $(AdbTarget) reverse tcp:$(_CoinquiLindoApiPort) tcp:$(_CoinquiLindoApiPort)" ContinueOnError="true" />
+    </Target>
+
 </Project>

@@ -23,10 +23,6 @@ namespace CoinquiLindo.Mobile
     		builder.Logging.AddDebug();
 #endif
 
-            string apiBaseAddress = DeviceInfo.Platform == DevicePlatform.Android
-            ? "http://10.0.2.2:5273"
-            : "http://localhost:5273";
-
             // Session: tokens in SecureStorage, Bearer attached (and refreshed) by a single shared handler
             builder.Services.AddSingleton(TimeProvider.System);
             builder.Services.AddSingleton<SecureTokenStore>();
@@ -39,7 +35,7 @@ namespace CoinquiLindo.Mobile
             // add http client (the shared handler must outlive each scoped HttpClient)
             builder.Services.AddScoped(sp => new HttpClient(sp.GetRequiredService<AuthTokenHandler>(), disposeHandler: false)
             {
-                BaseAddress = new Uri(apiBaseAddress),
+                BaseAddress = ApiSettings.BaseAddress,
                 Timeout = TimeSpan.FromSeconds(15)
             });
 

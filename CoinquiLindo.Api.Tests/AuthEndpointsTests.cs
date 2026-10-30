@@ -135,6 +135,21 @@ namespace CoinquiLindo.Api.Tests
         }
 
         [Fact]
+        public async Task GoogleLogin_Should_UseForwardedHttpsHost_When_BehindTrustedProxy()
+        {
+            var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+            using var request = new HttpRequestMessage(HttpMethod.Get, "/api/auth/google");
+            request.Headers.Add("X-Forwarded-Proto", "https");
+            request.Headers.Add("X-Forwarded-Host", "coinquilindo-5273.euw.devtunnels.ms");
+
+            var response = await client.SendAsync(request);
+
+            response.StatusCode.Should().Be(HttpStatusCode.Redirect);
+            Uri.UnescapeDataString(response.Headers.Location!.Query)
+                .Should().Contain("redirect_uri=https://coinquilindo-5273.euw.devtunnels.ms/signin-google");
+        }
+
+        [Fact]
         public async Task GoogleComplete_Should_RedirectToAppWithError_When_ExternalLoginIsMissing()
         {
             var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
