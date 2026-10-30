@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure("Data Source=coinquilindo.db");
 builder.Services.AddCoinquiLindoAuthentication(builder.Configuration);
 builder.Services.AddReverseProxySupport(builder.Configuration);
+builder.Services.AddCoinquiLindoRateLimiting(builder.Configuration);
 builder.Host.UseWolverine(opts =>
     opts.Discovery.IncludeAssembly(typeof(CreateHouseCommand).Assembly));
 
@@ -37,6 +38,8 @@ app.UseStatusCodePages();
 
 app.UseAuthentication();
 app.UseAuthorization();
+// After authentication: invite limits are partitioned per user
+app.UseRateLimiter();
 
 // Endpoints mapping
 app.MapAuthEndpoints();

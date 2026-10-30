@@ -50,7 +50,7 @@ namespace Coinquilindo.Application.Tests
             // Assert
             shiftId.Should().NotBeEmpty();
             await _mockShiftRepository.Received(1).AddAsync(
-                Arg.Is<Shift>(s => s.AssignedTenant.Id == tenant.Id && s.AssignedRoom.Id == room.Id),
+                Arg.Is<Shift>(s => s.HouseId == house.Id && s.AssignedTenant.Id == tenant.Id && s.AssignedRoom.Id == room.Id),
                 Arg.Any<CancellationToken>()
             );
         }

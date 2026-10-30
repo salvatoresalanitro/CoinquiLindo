@@ -41,11 +41,19 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("InviteCode")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InviteCode")
+                        .IsUnique();
 
                     b.ToTable("Houses");
                 });
@@ -145,6 +153,9 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("HouseId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("TEXT");
 
@@ -153,6 +164,8 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.HasIndex("AssignedRoomId");
 
                     b.HasIndex("AssignedTenantId");
+
+                    b.HasIndex("HouseId");
 
                     b.ToTable("Shifts");
                 });
@@ -286,6 +299,12 @@ namespace CoinquiLindo.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("AssignedTenantId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoinquiLindo.Domain.Entities.House", null)
+                        .WithMany()
+                        .HasForeignKey("HouseId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("AssignedRoom");

@@ -1,0 +1,134 @@
+@inject CoinquiLindoApiClient ApiClient
+@inject NavigationManager Navigation
+
+<div class="card mt-4 p-4 shadow-sm">
+    <h3 class="h5">Unisciti a una casa</h3>
+
+    @if (preview is null)
+    {
+        <p class="text-muted small mb-2">Inserisci il codice d'invito che ti hanno mandato i coinquilini.</p>
+
+        <input type="text" class="form-control text-uppercase font-monospace"
+               placeholder="ABCD-EFGH" maxlength="12" autocomplete="off"
+               @bind="inviteCode" @bind:event="oninput" />
+
+        <div class="mt-3">
+            <ErrorAlert Error="error" OnDismiss="() => error = null" />
+        </div>
+
+        <button class="btn btn-outline-primary w-100 mt-2" type="button" @onclick="LoadPreview"
+                disabled="@(isBusy || string.IsNullOrWhiteSpace(inviteCode))">
+            @if (isBusy)
+            {
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            }
+            else
+            {
+                <span>Continua</span>
+            }
+        </button>
+    }
+    else if (preview.IsAlreadyMember)
+    {
+        <p class="mb-3">Fai già parte di <strong>@preview.HouseName</strong>.</p>
+        <button class="btn btn-primary w-100" type="button" @onclick="() => Navigation.NavigateTo(HousePath(preview.HouseId))">Apri la casa</button>
+        <button class="btn btn-link w-100 mt-1" type="button" @onclick="Reset">Usa un altro codice</button>
+    }
+    else
+    {
+        <p class="mb-3">Stai per entrare in <strong>@preview.HouseName</strong> 🏠</p>
+
+        @if (preview.UnclaimedTenants.Count > 0)
+        {
+            @* Lets an existing flatmate (added by name before accounts existed) keep their shifts *@
+            <p class="small text-muted mb-2">Sei già nella lista dei coinquilini?</p>
+            <div class="list-group mb-3">
+                @foreach (var tenant in preview.UnclaimedTenants)
+                {
+                    <label class="list-group-item d-flex gap-2 align-items-center">
+                        <input class="form-check-input mt-0" type="radio" name="claim"
+                               checked="@(claimTenantId == tenant.Id)" @onchange="() => claimTenantId = tenant.Id" />
+                        <span>Sono <strong>@tenant.Name</strong></span>
+                    </label>
+                }
+                <label class="list-group-item d-flex gap-2 align-items-center">
+                    <input class="form-check-input mt-0" type="radio" name="claim"
+                           checked="@(claimTenantId is null)" @onchange="() => claimTenantId = null" />
+                    <span>Sono un nuovo coinquilino</span>
+                </label>
+            </div>
+        }
+
+        <ErrorAlert Error="error" OnDismiss="() => error = null" />
+
+        <button class="btn btn-primary w-100 mt-2" type="button" @onclick="Join" disabled="@isBusy">
+            @if (isBusy)
+            {
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                <span>Ingresso in corso...</span>
+            }
+            else
+            {
+                <span>Unisciti</span>
+            }
+        </button>
+        <button class="btn btn-link w-100 mt-1" type="button" @onclick="Reset" disabled="@isBusy">Annulla</button>
+    }
+</div>
+
+@code {
+    private string inviteCode = "";
+    private InvitePreviewResponse? preview;
+    private Guid? claimTenantId;
+    private bool isBusy;
+    private ApiError? error;
+
+    private async Task LoadPreview()
+    {
+        isBusy = true;
+        error = null;
+
+        var result = await ApiClient.GetInvitePreviewAsync(inviteCode.Trim());
+
+        isBusy = false;
+
+        if (result.IsSuccess)
+        {
+            preview = result.Value;
+            claimTenantId = null;
+        }
+        else
+        {
+            error = result.Error;
+        }
+    }
+
+    private async Task Join()
+    {
+        isBusy = true;
+        error = null;
+
+        var result = await ApiClient.JoinHouseAsync(inviteCode.Trim(), claimTenantId);
+
+        isBusy = false;
+
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo(HousePath(result.Value));
+        }
+        else
+        {
+            error = result.Error;
+        }
+    }
+
+    private void Reset()
+    {
+        preview = null;
+        claimTenantId = null;
+        error = null;
+        inviteCode = "";
+    }
+
+    private static string HousePath(Guid houseId) => $"/house/{houseId}";
+}

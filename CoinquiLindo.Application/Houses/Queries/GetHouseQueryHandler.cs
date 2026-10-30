@@ -28,7 +28,7 @@ namespace CoinquiLindo.Application.Houses.Queries
                         .ToList()))
                 .ToList();
 
-            return new HouseResponse(house.Id, house.Name, tenantsResponse, roomsResponse);
+            return new HouseResponse(house.Id, house.Name, tenantsResponse, roomsResponse, house.InviteCode);
         }
     }
 }

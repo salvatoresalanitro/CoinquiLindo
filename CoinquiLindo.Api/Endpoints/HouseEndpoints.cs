@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using CoinquiLindo.Api.Auth;
+using CoinquiLindo.Api.Hosting;
 using CoinquiLindo.Application.Houses.Commands;
 using CoinquiLindo.Application.Houses.Queries;
 using CoinquiLindo.Shared.Contracts;
@@ -20,9 +21,21 @@ namespace CoinquiLindo.Api.Endpoints
                 .Produces<Guid>()
                 .ProducesProblem(StatusCodes.Status400BadRequest);
 
-            group.MapPost("/{houseId:guid}/tenants", AddTenantToHouse)
-                .Produces(StatusCodes.Status200OK)
-                .ProducesProblem(StatusCodes.Status400BadRequest)
+            group.MapGet("/invites/{inviteCode}", GetInvitePreview)
+                .RequireRateLimiting(RateLimitingSetup.InvitesPolicy)
+                .Produces<InvitePreviewResponse>()
+                .ProducesProblem(StatusCodes.Status404NotFound)
+                .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+            group.MapPost("/join", JoinHouse)
+                .RequireRateLimiting(RateLimitingSetup.InvitesPolicy)
+                .Produces<Guid>()
+                .ProducesProblem(StatusCodes.Status404NotFound)
+                .ProducesProblem(StatusCodes.Status409Conflict)
+                .ProducesProblem(StatusCodes.Status429TooManyRequests);
+
+            group.MapPost("/{houseId:guid}/invite-code", RegenerateInviteCode)
+                .Produces<InviteCodeResponse>()
                 .ProducesProblem(StatusCodes.Status403Forbidden)
                 .ProducesProblem(StatusCodes.Status404NotFound);
 
@@ -49,12 +62,31 @@ namespace CoinquiLindo.Api.Endpoints
             return Results.Ok(id);
         }
 
-        private static async Task<IResult> AddTenantToHouse(Guid houseId, [FromBody] AddTenantRequest request, ClaimsPrincipal user, IMessageBus bus, CancellationToken ct)
+        private static async Task<IResult> GetInvitePreview(string inviteCode, ClaimsPrincipal user, IMessageBus bus, CancellationToken ct)
         {
-            var command = new AddTenantToHouseCommand(HouseId: houseId, TenantName: request.TenantName, RequesterUserId: user.GetUserId());
-            await bus.InvokeAsync(command, ct);
+            var query = new GetInvitePreviewQuery(InviteCode: inviteCode, RequesterUserId: user.GetUserId());
+            var response = await bus.InvokeAsync<InvitePreviewResponse>(query, ct);
 
-            return Results.Ok();
+            return Results.Ok(response);
+        }
+
+        private static async Task<IResult> JoinHouse([FromBody] JoinHouseRequest request, ClaimsPrincipal user, IMessageBus bus, CancellationToken ct)
+        {
+            var command = new JoinHouseCommand(
+                InviteCode: request.InviteCode,
+                ClaimTenantId: request.ClaimTenantId,
+                RequesterUserId: user.GetUserId());
+            var houseId = await bus.InvokeAsync<Guid>(command, ct);
+
+            return Results.Ok(houseId);
+        }
+
+        private static async Task<IResult> RegenerateInviteCode(Guid houseId, ClaimsPrincipal user, IMessageBus bus, CancellationToken ct)
+        {
+            var command = new RegenerateInviteCodeCommand(HouseId: houseId, RequesterUserId: user.GetUserId());
+            var response = await bus.InvokeAsync<InviteCodeResponse>(command, ct);
+
+            return Results.Ok(response);
         }
 
         private static async Task<IResult> AddRoomToHouse(Guid houseId, [FromBody] AddRoomRequest request, ClaimsPrincipal user, IMessageBus bus, CancellationToken ct)

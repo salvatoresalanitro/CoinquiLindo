@@ -65,10 +65,20 @@ namespace CoinquiLindo.Domain.Tests
         {
             var start = DateTime.UtcNow;
 
-            var action = () => new Shift(new Tenant("Salvo"), new Room("Bagno"), start, start.AddDays(daysOffset));
+            var action = () => new Shift(Guid.NewGuid(), new Tenant("Salvo"), new Room("Bagno"), start, start.AddDays(daysOffset));
 
             action.Should().Throw<DomainValidationException>()
                 .Which.Code.Should().Be("Shift.InvalidDateRange");
+        }
+
+        [Fact]
+        public void Shift_Should_ThrowValidation_When_HouseIdIsEmpty()
+        {
+            var action = () => new Shift(Guid.Empty, new Tenant("Salvo"), new Room("Bagno"),
+                DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+
+            action.Should().Throw<DomainValidationException>()
+                .Which.Code.Should().Be("Shift.HouseRequired");
         }
 
         [Fact]

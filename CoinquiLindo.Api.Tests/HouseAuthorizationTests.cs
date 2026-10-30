@@ -45,11 +45,11 @@ namespace CoinquiLindo.Api.Tests
 
             var get = await stranger.GetAsync($"/api/houses/{houseId}");
             var addRoom = await stranger.PostAsJsonAsync($"/api/houses/{houseId}/rooms", new AddRoomRequest("Cucina", null));
-            var addTenant = await stranger.PostAsJsonAsync($"/api/houses/{houseId}/tenants", new AddTenantRequest("Intruso"));
+            var regenerate = await stranger.PostAsync($"/api/houses/{houseId}/invite-code", null);
 
             (await get.ReadProblemAsync(HttpStatusCode.Forbidden)).ErrorCode.Should().Be("House.AccessDenied");
             (await addRoom.ReadProblemAsync(HttpStatusCode.Forbidden)).ErrorCode.Should().Be("House.AccessDenied");
-            (await addTenant.ReadProblemAsync(HttpStatusCode.Forbidden)).ErrorCode.Should().Be("House.AccessDenied");
+            (await regenerate.ReadProblemAsync(HttpStatusCode.Forbidden)).ErrorCode.Should().Be("House.AccessDenied");
 
             var ownerView = await owner.GetFromJsonAsync<HouseResponse>($"/api/houses/{houseId}");
             ownerView!.Rooms.Should().BeEmpty();

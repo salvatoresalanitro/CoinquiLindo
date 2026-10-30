@@ -26,6 +26,9 @@ namespace CoinquiLindo.Domain.Entities
             UserId = user.Id;
         }
 
+        // The tenant keeps its Id and name, so existing shifts stay assigned to it
+        internal void LinkToUser(Guid userId) => UserId = userId;
+
 #pragma warning disable CS8618 // It's needed for EF Core to work properly, but we don't want to allow it to be used outside of EF Core.
         private Tenant() { }
 #pragma warning restore CS8618

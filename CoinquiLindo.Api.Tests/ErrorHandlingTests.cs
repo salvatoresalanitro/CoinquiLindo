@@ -15,9 +15,9 @@ namespace CoinquiLindo.Api.Tests
         public Task DisposeAsync() => Task.CompletedTask;
 
         [Fact]
-        public async Task AddTenant_Should_Return404Problem_When_HouseDoesNotExist()
+        public async Task AddRoom_Should_Return404Problem_When_HouseDoesNotExist()
         {
-            var response = await _client.PostAsJsonAsync($"/api/houses/{Guid.NewGuid()}/tenants", new AddTenantRequest("Salvo"));
+            var response = await _client.PostAsJsonAsync($"/api/houses/{Guid.NewGuid()}/rooms", new AddRoomRequest("Cucina", null));
 
             var problem = await response.ReadProblemAsync(HttpStatusCode.NotFound);
             problem.ContentType.Should().Be("application/problem+json");

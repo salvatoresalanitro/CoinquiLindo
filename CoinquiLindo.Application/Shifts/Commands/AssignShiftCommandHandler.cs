@@ -19,7 +19,7 @@ namespace CoinquiLindo.Application.Shifts.Commands
             var room = house.Rooms.FirstOrDefault(r => r.Id == request.RoomId)
                 ?? throw new NotFoundException(nameof(Room), request.RoomId);
 
-            var shift = new Shift(tenant, room, request.StartDate, request.EndDate);
+            var shift = new Shift(house.Id, tenant, room, request.StartDate, request.EndDate);
 
             await shiftRepository.AddAsync(shift, cancellationToken);
 

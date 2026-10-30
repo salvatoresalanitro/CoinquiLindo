@@ -17,6 +17,7 @@ namespace CoinquiLindo.Api.Tests
             { new RoomNameAlreadyExistsException("Cucina"), HttpStatusCode.Conflict, "House.RoomNameAlreadyExists" },
             { new SelfReportNotAllowedException(), HttpStatusCode.UnprocessableEntity, "Shift.SelfReportNotAllowed" },
             { new UserAlreadyMemberException(), HttpStatusCode.Conflict, "House.UserAlreadyMember" },
+            { new TenantAlreadyClaimedException(), HttpStatusCode.Conflict, "Tenant.AlreadyClaimed" },
             { new NotHouseMemberException(), HttpStatusCode.Forbidden, "House.AccessDenied" },
             { new InvalidRefreshTokenException(), HttpStatusCode.Unauthorized, "Auth.InvalidRefreshToken" },
         };
@@ -64,6 +65,7 @@ namespace CoinquiLindo.Api.Tests
             public Task AddAsync(House house, CancellationToken cancellationToken = default) => throw toThrow.Exception;
             public Task<House?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => throw toThrow.Exception;
             public Task<IReadOnlyList<House>> GetByMemberAsync(Guid userId, CancellationToken cancellationToken = default) => throw toThrow.Exception;
+            public Task<House?> GetByInviteCodeAsync(string inviteCode, CancellationToken cancellationToken = default) => throw toThrow.Exception;
             public Task UpdateAsync(House house, CancellationToken cancellationToken = default) => throw toThrow.Exception;
         }
     }

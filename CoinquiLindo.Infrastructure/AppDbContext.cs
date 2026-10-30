@@ -23,6 +23,8 @@ namespace CoinquiLindo.Infrastructure
             modelBuilder.Entity<House>( b =>
             {
                 b.HasKey(h => h.Id);
+                b.Property(h => h.InviteCode).HasMaxLength(House.InviteCodeLength);
+                b.HasIndex(h => h.InviteCode).IsUnique();
                 b.Metadata.FindNavigation(nameof(House.Tenants))!
                     .SetPropertyAccessMode(PropertyAccessMode.Field);
                 b.Metadata.FindNavigation(nameof(House.Rooms))!
@@ -41,6 +43,7 @@ namespace CoinquiLindo.Infrastructure
             modelBuilder.Entity<Shift>(b =>
             {
                 b.HasKey(s => s.Id);
+                b.HasOne<House>().WithMany().HasForeignKey(s => s.HouseId).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(s => s.AssignedTenant).WithMany();
                 b.HasOne(s => s.AssignedRoom).WithMany();
 

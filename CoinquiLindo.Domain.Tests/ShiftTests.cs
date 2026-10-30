@@ -19,7 +19,7 @@ namespace CoinquiLindo.Domain.Tests
             var endDate = stardDate.AddDays(7);
 
             //Act
-            var shift = new Shift(tenant, room, stardDate, endDate);
+            var shift = new Shift(Guid.NewGuid(), tenant, room, stardDate, endDate);
 
             //Assert
             shift.Checklist.Should().HaveCount(2);
@@ -36,7 +36,7 @@ namespace CoinquiLindo.Domain.Tests
             var tenant = new Tenant("Salvo");
             var stardDate = DateTime.UtcNow.Date;
             var endDate = stardDate.AddDays(7);
-            var shift = new Shift(tenant, room, stardDate, endDate);
+            var shift = new Shift(Guid.NewGuid(), tenant, room, stardDate, endDate);
             var itemToComplete = shift.Checklist.First();
 
             //Act
@@ -55,7 +55,7 @@ namespace CoinquiLindo.Domain.Tests
             var room = new Room("Bagno");
             var tenant = new Tenant("Lucia");
             var reporter = new Tenant("Salvo");
-            var shift = new Shift(tenant, room, DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+            var shift = new Shift(Guid.NewGuid(), tenant, room, DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
             var report = new Report(reporter, "Manca la carta igienica", null);
 
             // Act
@@ -71,7 +71,7 @@ namespace CoinquiLindo.Domain.Tests
         {
             // Arrange
             var tenant = new Tenant("Lucia");
-            var shift = new Shift(tenant, new Room("Bagno"), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+            var shift = new Shift(Guid.NewGuid(), tenant, new Room("Bagno"), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
             var report = new Report(tenant, "Auto-segnalazione");
 
             // Act
@@ -87,7 +87,7 @@ namespace CoinquiLindo.Domain.Tests
         public void MarkItemAsCompleted_Should_ThrowNotFound_When_ItemDoesNotExist()
         {
             // Arrange
-            var shift = new Shift(new Tenant("Salvo"), new Room("Bagno"), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+            var shift = new Shift(Guid.NewGuid(), new Tenant("Salvo"), new Room("Bagno"), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
             var missingId = Guid.NewGuid();
 
             // Act
@@ -96,6 +96,17 @@ namespace CoinquiLindo.Domain.Tests
             // Assert
             action.Should().Throw<NotFoundException>()
                 .Which.Code.Should().Be("ShiftChecklistItem.NotFound");
+        }
+
+        [Fact]
+        public void CreateShift_Should_KeepHouseId()
+        {
+            var houseId = Guid.NewGuid();
+
+            var shift = new Shift(houseId, new Tenant("Salvo"), new Room("Bagno"),
+                DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+
+            shift.HouseId.Should().Be(houseId);
         }
     }
 }

@@ -28,12 +28,12 @@ namespace CoinquiLindo.Client.Tests
         {
             var id = Guid.NewGuid();
             var client = CreateClient(StubHttpMessageHandler.Returning(HttpStatusCode.OK,
-                $$"""{"id":"{{id}}","name":"Casa","tenants":[],"rooms":[]}"""));
+                $$"""{"id":"{{id}}","name":"Casa","tenants":[],"rooms":[],"inviteCode":"ABCDEFGH"}"""));
 
             var result = await client.GetHouseAsync(id);
 
             result.IsSuccess.Should().BeTrue();
-            result.Value.Should().BeEquivalentTo(new HouseResponse(id, "Casa", [], []));
+            result.Value.Should().BeEquivalentTo(new HouseResponse(id, "Casa", [], [], "ABCDEFGH"));
         }
 
         [Fact]
@@ -53,15 +53,15 @@ namespace CoinquiLindo.Client.Tests
         }
 
         [Fact]
-        public async Task AddTenant_Should_ReturnHouseNotFoundError_When_Api404()
+        public async Task JoinHouse_Should_ReturnInviteNotFoundError_When_Api404()
         {
-            var client = CreateClient(StubHttpMessageHandler.ReturningProblem(HttpStatusCode.NotFound, "House.NotFound"));
+            var client = CreateClient(StubHttpMessageHandler.ReturningProblem(HttpStatusCode.NotFound, "Invite.NotFound"));
 
-            var result = await client.AddTenantAsync(Guid.NewGuid(), "Salvo");
+            var result = await client.JoinHouseAsync("ABCD-EFGH", null);
 
             result.IsSuccess.Should().BeFalse();
-            result.Error!.ErrorCode.Should().Be("House.NotFound");
-            result.Error.UserMessage.Should().Be(ErrorMessageProvider.GetMessage("House.NotFound", 404));
+            result.Error!.ErrorCode.Should().Be("Invite.NotFound");
+            result.Error.UserMessage.Should().Be(ErrorMessageProvider.GetMessage("Invite.NotFound", 404));
         }
 
         [Fact]
@@ -111,7 +111,7 @@ namespace CoinquiLindo.Client.Tests
             // HttpClient surfaces timeouts as TaskCanceledException wrapping a TimeoutException
             var client = CreateClient(StubHttpMessageHandler.Throwing(new TaskCanceledException("Timeout", new TimeoutException())));
 
-            var result = await client.AddTenantAsync(Guid.NewGuid(), "Salvo");
+            var result = await client.RegenerateInviteCodeAsync(Guid.NewGuid());
 
             result.IsSuccess.Should().BeFalse();
             result.Error!.ErrorCode.Should().Be(ApiError.NetworkUnavailableCode);

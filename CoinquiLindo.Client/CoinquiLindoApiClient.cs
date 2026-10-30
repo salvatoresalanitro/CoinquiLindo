@@ -23,12 +23,28 @@ namespace CoinquiLindo.Client
             return error is null ? ApiResult<HouseResponse>.Success(value!) : ApiResult<HouseResponse>.Failure(error);
         }
 
-        public async Task<ApiResult> AddTenantAsync(Guid houseId, string tenantName, CancellationToken cancellationToken = default)
+        public async Task<ApiResult<InvitePreviewResponse>> GetInvitePreviewAsync(string inviteCode, CancellationToken cancellationToken = default)
         {
-            var (_, error) = await SendAsync<object>(
-                ct => httpClient.PostAsJsonAsync($"/api/houses/{houseId}/tenants", new AddTenantRequest(tenantName), ct), readBody: false, cancellationToken);
+            var (value, error) = await SendAsync<InvitePreviewResponse>(
+                ct => httpClient.GetAsync($"/api/houses/invites/{Uri.EscapeDataString(inviteCode)}", ct), readBody: true, cancellationToken);
 
-            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+            return error is null ? ApiResult<InvitePreviewResponse>.Success(value!) : ApiResult<InvitePreviewResponse>.Failure(error);
+        }
+
+        public async Task<ApiResult<Guid>> JoinHouseAsync(string inviteCode, Guid? claimTenantId, CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<Guid>(
+                ct => httpClient.PostAsJsonAsync("/api/houses/join", new JoinHouseRequest(inviteCode, claimTenantId), ct), readBody: true, cancellationToken);
+
+            return error is null ? ApiResult<Guid>.Success(value) : ApiResult<Guid>.Failure(error);
+        }
+
+        public async Task<ApiResult<InviteCodeResponse>> RegenerateInviteCodeAsync(Guid houseId, CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<InviteCodeResponse>(
+                ct => httpClient.PostAsync($"/api/houses/{houseId}/invite-code", null, ct), readBody: true, cancellationToken);
+
+            return error is null ? ApiResult<InviteCodeResponse>.Success(value!) : ApiResult<InviteCodeResponse>.Failure(error);
         }
 
         public async Task<ApiResult<Guid>> AddRoomAsync(Guid houseId, string name, List<string> cleaningTasks, CancellationToken cancellationToken = default)
@@ -37,6 +53,48 @@ namespace CoinquiLindo.Client
                 ct => httpClient.PostAsJsonAsync($"/api/houses/{houseId}/rooms", new AddRoomRequest(name, cleaningTasks), ct), readBody: true, cancellationToken);
 
             return error is null ? ApiResult<Guid>.Success(value) : ApiResult<Guid>.Failure(error);
+        }
+
+        public async Task<ApiResult<Guid>> AssignShiftAsync(
+            Guid houseId,
+            AssignShiftRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<Guid>(
+                ct => httpClient.PostAsJsonAsync($"/api/houses/{houseId}/shifts", request, ct),
+                readBody: true,
+                cancellationToken);
+
+            return error is null ? ApiResult<Guid>.Success(value) : ApiResult<Guid>.Failure(error);
+        }
+
+        public async Task<ApiResult<List<ShiftResponse>>> GetHouseShiftsAsync(
+            Guid houseId,
+            CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<List<ShiftResponse>>(
+                ct => httpClient.GetAsync($"/api/houses/{houseId}/shifts", ct),
+                readBody: true,
+                cancellationToken);
+
+            return error is null ? ApiResult<List<ShiftResponse>>.Success(value!) : ApiResult<List<ShiftResponse>>.Failure(error);
+        }
+
+        public async Task<ApiResult> CompleteShiftChecklistItemAsync(
+            Guid houseId,
+            Guid shiftId,
+            Guid checklistItemId,
+            CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.PutAsync(
+                    $"/api/houses/{houseId}/shifts/{shiftId}/checklist/{checklistItemId}",
+                    content: null,
+                    ct),
+                readBody: false,
+                cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
         }
 
         public async Task<ApiResult<MeResponse>> GetMeAsync(CancellationToken cancellationToken = default)

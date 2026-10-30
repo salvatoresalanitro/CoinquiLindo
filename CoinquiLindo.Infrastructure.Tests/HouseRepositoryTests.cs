@@ -168,6 +168,64 @@ namespace CoinquiLindo.Infrastructure.Tests
             houses.Select(h => h.Id).Should().BeEquivalentTo([mine.Id, shared.Id]);
         }
 
+        [Fact]
+        public async Task GetByInviteCodeAsync_Should_ReturnHouseWithChildren_OrNull()
+        {
+            // Arrange
+            var house = new House("Casa Studenti");
+            house.AddTenant(new Tenant("Luca"));
+            await using (var seedContext = CreateContext())
+            {
+                await new HouseRepository(seedContext).AddAsync(house);
+            }
+
+            // Act
+            await using var context = CreateContext();
+            var repository = new HouseRepository(context);
+            var found = await repository.GetByInviteCodeAsync(house.InviteCode);
+            var missing = await repository.GetByInviteCodeAsync("ZZZZZZZZ");
+
+            // Assert
+            found!.Id.Should().Be(house.Id);
+            found.InviteCode.Should().Be(house.InviteCode);
+            found.Tenants.Should().ContainSingle(t => t.Name == "Luca");
+            missing.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task UpdateAsync_Should_PersistRegeneratedInviteCode_And_ClaimedTenant()
+        {
+            // Arrange
+            var user = await SeedUserAsync("google-sub-1");
+            var house = new House("Casa Studenti");
+            var legacy = new Tenant("Luca");
+            house.AddTenant(legacy);
+            await using (var seedContext = CreateContext())
+            {
+                await new HouseRepository(seedContext).AddAsync(house);
+            }
+
+            string newCode;
+
+            // Act
+            await using (var context = CreateContext())
+            {
+                var repository = new HouseRepository(context);
+                var tracked = await repository.GetByIdAsync(house.Id);
+                newCode = tracked!.RegenerateInviteCode();
+                tracked.ClaimTenant(legacy.Id, user);
+
+                await repository.UpdateAsync(tracked);
+            }
+
+            // Assert
+            await using var assertContext = CreateContext();
+            var persisted = await new HouseRepository(assertContext).GetByIdAsync(house.Id);
+
+            persisted!.InviteCode.Should().Be(newCode);
+            persisted.Tenants.Should().ContainSingle(t => t.Id == legacy.Id && t.UserId == user.Id && t.Name == "Luca");
+        }
+
         private async Task<User> SeedUserAsync(string googleSubject)
         {
             var user = new User(googleSubject, $"{googleSubject}@gmail.com", googleSubject);

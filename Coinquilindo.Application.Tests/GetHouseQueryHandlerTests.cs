@@ -38,6 +38,7 @@ namespace Coinquilindo.Application.Tests
             result.Should().NotBeNull();
             result!.Id.Should().Be(house.Id);
             result.Name.Should().Be(house.Name);
+            result.InviteCode.Should().Be(house.InviteCode);
             result.Tenants.Select(t => t.Name).Should().BeEquivalentTo("Salvo", "Luca");
         }
 

@@ -1,22 +1,24 @@
-﻿using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
+using CoinquiLindo.Shared.Contracts;
+
 namespace CoinquiLindo.Application.Houses.Commands
 {
-    public class AddTenantToHouseCommandHandler(IHouseRepository houseRepository)
+    public class RegenerateInviteCodeCommandHandler(IHouseRepository houseRepository)
     {
-        public async Task Handle(AddTenantToHouseCommand request, CancellationToken cancellationToken)
+        public async Task<InviteCodeResponse> Handle(RegenerateInviteCodeCommand request, CancellationToken cancellationToken)
         {
             var house = await houseRepository.GetByIdAsync(request.HouseId, cancellationToken)
                 ?? throw new NotFoundException(nameof(House), request.HouseId);
 
             house.EnsureIsMember(request.RequesterUserId);
 
-            var newTenant = new Tenant(request.TenantName);
-
-            house.AddTenant(newTenant);
+            var inviteCode = house.RegenerateInviteCode();
 
             await houseRepository.UpdateAsync(house, cancellationToken);
+
+            return new InviteCodeResponse(inviteCode);
         }
     }
 }

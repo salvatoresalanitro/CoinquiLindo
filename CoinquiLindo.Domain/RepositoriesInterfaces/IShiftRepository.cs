@@ -5,5 +5,8 @@ namespace CoinquiLindo.Domain.RepositoriesInterfaces
     public interface IShiftRepository
     {
         Task AddAsync(Shift shift, CancellationToken cancellationToken = default);
+        Task<IReadOnlyList<Shift>> GetByHouseIdAsync(Guid houseId, CancellationToken cancellationToken = default);
+        Task<Shift?> GetByIdAsync(Guid houseId, Guid shiftId, CancellationToken cancellationToken = default);
+        Task UpdateAsync(Shift shift, CancellationToken cancellationToken = default);
     }
 }

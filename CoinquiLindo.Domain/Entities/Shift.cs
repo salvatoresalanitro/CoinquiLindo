@@ -5,6 +5,7 @@ namespace CoinquiLindo.Domain.Entities
     public class Shift
     {
         public Guid Id { get; private set; }
+        public Guid HouseId { get; private set; }
         public Tenant AssignedTenant { get; private set; }
         public Room AssignedRoom { get; private set; }
         public DateTime StartDate { get; private set; }
@@ -16,8 +17,13 @@ namespace CoinquiLindo.Domain.Entities
         public IReadOnlyCollection<Report> Reports => _reports.AsReadOnly();
         public IReadOnlyCollection<ShiftChecklistItem> Checklist => _checklist.AsReadOnly();
 
-        public Shift(Tenant assignedTenant, Room assignedRoom, DateTime startDate, DateTime endDate)
+        public Shift(Guid houseId, Tenant assignedTenant, Room assignedRoom, DateTime startDate, DateTime endDate)
         {
+            if (houseId == Guid.Empty)
+            {
+                throw new DomainValidationException("Shift.HouseRequired", "A shift must belong to a house.");
+            }
+
             ArgumentNullException.ThrowIfNull(assignedTenant, nameof(assignedTenant));
             ArgumentNullException.ThrowIfNull(assignedRoom, nameof(assignedRoom));
 
@@ -27,6 +33,7 @@ namespace CoinquiLindo.Domain.Entities
             }
 
             Id = Guid.NewGuid();
+            HouseId = houseId;
             AssignedTenant = assignedTenant;
             AssignedRoom = assignedRoom;
             StartDate = startDate;

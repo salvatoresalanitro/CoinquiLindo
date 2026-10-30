@@ -1,6 +1,7 @@
 ﻿using System.Security.Claims;
 using CoinquiLindo.Api.Auth;
 using CoinquiLindo.Application.Shifts.Commands;
+using CoinquiLindo.Application.Shifts.Queries;
 using CoinquiLindo.Shared.Contracts;
 using Microsoft.AspNetCore.Mvc;
 using Wolverine;
@@ -21,6 +22,16 @@ namespace CoinquiLindo.Api.Endpoints
                 .ProducesProblem(StatusCodes.Status403Forbidden)
                 .ProducesProblem(StatusCodes.Status404NotFound);
 
+            group.MapGet("/", GetHouseShifts)
+                .Produces<List<ShiftResponse>>()
+                .ProducesProblem(StatusCodes.Status403Forbidden)
+                .ProducesProblem(StatusCodes.Status404NotFound);
+
+            group.MapPut("/{shiftId:guid}/checklist/{itemId:guid}", CompleteChecklistItem)
+                .Produces(StatusCodes.Status204NoContent)
+                .ProducesProblem(StatusCodes.Status403Forbidden)
+                .ProducesProblem(StatusCodes.Status404NotFound);
+
             return app;
         }
 
@@ -37,6 +48,34 @@ namespace CoinquiLindo.Api.Endpoints
             var id = await bus.InvokeAsync<Guid>(command, ct);
 
             return Results.Ok(id);
+        }
+
+        private static async Task<IResult> GetHouseShifts(
+            Guid houseId,
+            ClaimsPrincipal user,
+            IMessageBus bus,
+            CancellationToken ct)
+        {
+            var query = new GetHouseShiftsQuery(houseId, user.GetUserId());
+            var shifts = await bus.InvokeAsync<List<ShiftResponse>>(query, ct);
+            return Results.Ok(shifts);
+        }
+
+        private static async Task<IResult> CompleteChecklistItem(
+            Guid houseId,
+            Guid shiftId,
+            Guid itemId,
+            ClaimsPrincipal user,
+            IMessageBus bus,
+            CancellationToken ct)
+        {
+            var command = new CompleteShiftChecklistItemCommand(
+                houseId,
+                shiftId,
+                itemId,
+                user.GetUserId());
+            await bus.InvokeAsync(command, ct);
+            return Results.NoContent();
         }
     }
 }

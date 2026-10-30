@@ -25,6 +25,9 @@ namespace CoinquiLindo.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
         }
 
+        public Task<House?> GetByInviteCodeAsync(string inviteCode, CancellationToken cancellationToken = default) =>
+            HousesWithChildren().FirstOrDefaultAsync(h => h.InviteCode == inviteCode, cancellationToken);
+
         public Task UpdateAsync(House house, CancellationToken cancellationToken = default)
         {
             // House is already tracked: Update() would mark new children as Modified
