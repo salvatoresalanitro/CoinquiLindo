@@ -33,11 +33,22 @@ namespace CoinquiLindo.Infrastructure.Repositories
         public Task<Shift?> GetByIdAsync(Guid houseId, Guid shiftId, CancellationToken cancellationToken = default) =>
             dbContext.Shifts
                 .Include(shift => shift.AssignedTenant)
+                .Include(shift => shift.AssignedRoom)
                 .Include(shift => shift.Checklist)
                 .Include(shift => shift.Reports).ThenInclude(report => report.Reporter)
                 .Include(shift => shift.Reports).ThenInclude(report => report.Votes)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(shift => shift.HouseId == houseId && shift.Id == shiftId, cancellationToken);
+
+        public async Task<IReadOnlyList<Shift>> GetEndingBetweenAsync(DateTime fromExclusive, DateTime toInclusive, CancellationToken cancellationToken = default) =>
+            await dbContext.Shifts
+                .AsNoTracking()
+                .Where(shift => shift.EndDate > fromExclusive && shift.EndDate <= toInclusive)
+                .Include(shift => shift.AssignedTenant)
+                .Include(shift => shift.AssignedRoom)
+                .Include(shift => shift.Checklist)
+                .AsSplitQuery()
+                .ToListAsync(cancellationToken);
 
         public async Task UpdateAsync(Shift shift, CancellationToken cancellationToken = default)
         {

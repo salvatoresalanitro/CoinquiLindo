@@ -1,0 +1,85 @@
+﻿@implements IDisposable
+@inject UnreadNotificationsState Notifications
+@inject NavigationManager Navigation
+
+<a href="notifications" class="notification-bell" aria-label="@AriaLabel">
+    <span aria-hidden="true">🔔</span>
+    @if (Notifications.UnreadCount > 0)
+    {
+        <span class="notification-badge">@(Notifications.UnreadCount > 9 ? "9+" : Notifications.UnreadCount.ToString())</span>
+    }
+</a>
+
+@code {
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(60);
+
+    private readonly CancellationTokenSource polling = new();
+    private Microsoft.Maui.Controls.Window? window;
+    private bool isInForeground = true;
+
+    private string AriaLabel => Notifications.UnreadCount == 0
+        ? "Notifiche"
+        : $"Notifiche, {Notifications.UnreadCount} non lette";
+
+    protected override void OnInitialized()
+    {
+        Notifications.Changed += OnCountChanged;
+        Navigation.LocationChanged += OnLocationChanged;
+
+        window = Microsoft.Maui.Controls.Application.Current?.Windows.FirstOrDefault();
+        if (window is not null)
+        {
+            window.Stopped += OnWindowStopped;
+            window.Resumed += OnWindowResumed;
+        }
+
+        _ = PollAsync(polling.Token);
+    }
+
+    private async Task PollAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Notifications.RefreshAsync(cancellationToken);
+
+            using var timer = new PeriodicTimer(PollInterval);
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                // No network traffic while the app is in background
+                if (isInForeground)
+                {
+                    await Notifications.RefreshAsync(cancellationToken);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void OnCountChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) =>
+        _ = Notifications.RefreshAsync(polling.Token);
+
+    private void OnWindowStopped(object? sender, EventArgs e) => isInForeground = false;
+
+    private void OnWindowResumed(object? sender, EventArgs e)
+    {
+        isInForeground = true;
+        _ = Notifications.RefreshAsync(polling.Token);
+    }
+
+    public void Dispose()
+    {
+        polling.Cancel();
+        polling.Dispose();
+        Notifications.Changed -= OnCountChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+        if (window is not null)
+        {
+            window.Stopped -= OnWindowStopped;
+            window.Resumed -= OnWindowResumed;
+        }
+    }
+}

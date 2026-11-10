@@ -1,4 +1,5 @@
 using CoinquiLindo.Application.Auth;
+using CoinquiLindo.Application.Notifications;
 using CoinquiLindo.Application.Reports;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 using CoinquiLindo.Infrastructure.Auth;
@@ -22,6 +23,8 @@ namespace CoinquiLindo.Infrastructure
             services.AddScoped<IHouseRepository, HouseRepository>();
             services.AddScoped<IShiftRepository, ShiftRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<INotificationRepository, NotificationRepository>();
+            services.AddScoped<NotificationPublisher>();
 
             // ReportPhotoStorageOptions are bound by the host (Api) from configuration
             services.AddSingleton<IReportPhotoStorage, FileSystemReportPhotoStorage>();

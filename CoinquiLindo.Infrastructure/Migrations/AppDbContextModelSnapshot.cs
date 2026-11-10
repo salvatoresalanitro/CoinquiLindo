@@ -58,6 +58,61 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.ToTable("Houses");
                 });
 
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("HouseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RecipientUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ReportId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("ShiftId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HouseId");
+
+                    b.HasIndex("RecipientUserId", "ReadAt", "CreatedAt");
+
+                    b.HasIndex("RecipientUserId", "Type", "ReportId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Notifications_OneUnreadVoteSummaryPerReport")
+                        .HasFilter("\"Type\" = 4 AND \"ReadAt\" IS NULL");
+
+                    b.HasIndex("RecipientUserId", "Type", "ShiftId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Notifications_DueSoonOncePerShift")
+                        .HasFilter("\"Type\" = 2");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -292,6 +347,21 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.HasOne("CoinquiLindo.Domain.Entities.Room", null)
                         .WithMany("CleaningTasks")
                         .HasForeignKey("RoomId");
+                });
+
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.Notification", b =>
+                {
+                    b.HasOne("CoinquiLindo.Domain.Entities.House", null)
+                        .WithMany()
+                        .HasForeignKey("HouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoinquiLindo.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("RecipientUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.RefreshToken", b =>

@@ -166,6 +166,51 @@ namespace CoinquiLindo.Client
             return error is null ? ApiResult<ReportResponse>.Success(value!) : ApiResult<ReportResponse>.Failure(error);
         }
 
+        public async Task<ApiResult<List<NotificationResponse>>> GetNotificationsAsync(
+            bool unreadOnly = false,
+            int take = 50,
+            CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<List<NotificationResponse>>(
+                ct => httpClient.GetAsync($"/api/me/notifications?unreadOnly={(unreadOnly ? "true" : "false")}&take={take}", ct),
+                readBody: true,
+                cancellationToken);
+
+            return error is null
+                ? ApiResult<List<NotificationResponse>>.Success(value!)
+                : ApiResult<List<NotificationResponse>>.Failure(error);
+        }
+
+        public async Task<ApiResult<int>> GetUnreadNotificationsCountAsync(CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<UnreadNotificationsResponse>(
+                ct => httpClient.GetAsync("/api/me/notifications/unread-count", ct),
+                readBody: true,
+                cancellationToken);
+
+            return error is null ? ApiResult<int>.Success(value!.Count) : ApiResult<int>.Failure(error);
+        }
+
+        public async Task<ApiResult> MarkNotificationAsReadAsync(Guid notificationId, CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.PutAsync($"/api/me/notifications/{notificationId}/read", null, ct),
+                readBody: false,
+                cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
+        public async Task<ApiResult> MarkAllNotificationsAsReadAsync(CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.PutAsync("/api/me/notifications/read-all", null, ct),
+                readBody: false,
+                cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
         public async Task<ApiResult<ReportPhotoData>> GetReportPhotoAsync(string photoUrl, CancellationToken cancellationToken = default)
         {
             // The bearer token is attached to every request: only API-relative paths are allowed

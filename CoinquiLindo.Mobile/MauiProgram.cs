@@ -42,6 +42,7 @@ namespace CoinquiLindo.Mobile
             // add our services
             builder.Services.AddScoped<CoinquiLindoApiClient>();
             builder.Services.AddScoped<AuthClient>();
+            builder.Services.AddScoped<UnreadNotificationsState>();
 
             return builder.Build();
         }

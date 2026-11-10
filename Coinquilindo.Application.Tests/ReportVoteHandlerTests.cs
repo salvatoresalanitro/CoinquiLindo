@@ -1,3 +1,4 @@
+using CoinquiLindo.Application.Notifications;
 using CoinquiLindo.Application.Reports.Commands;
 using CoinquiLindo.Application.Reports.Queries;
 using CoinquiLindo.Application.Shifts.Queries;
@@ -157,7 +158,8 @@ namespace Coinquilindo.Application.Tests
             asAssignee.Reports.Single().Should().BeEquivalentTo(new { Score = 1, MyVote = (ReportVoteValue?)null, CanVote = false });
         }
 
-        private CastReportVoteCommandHandler CastHandler() => new(_houseRepository, _shiftRepository);
+        private CastReportVoteCommandHandler CastHandler() => new(_houseRepository, _shiftRepository,
+            new NotificationPublisher(Substitute.For<INotificationRepository>(), TimeProvider.System));
 
         private RemoveReportVoteCommandHandler RemoveHandler() => new(_houseRepository, _shiftRepository);
 

@@ -1,10 +1,14 @@
-﻿using CoinquiLindo.Domain.Entities;
+﻿using CoinquiLindo.Application.Notifications;
+using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 
 namespace CoinquiLindo.Application.Shifts.Commands
 {
-    public class AssignShiftCommandHandler(IHouseRepository houseRepository, IShiftRepository shiftRepository)
+    public class AssignShiftCommandHandler(
+        IHouseRepository houseRepository,
+        IShiftRepository shiftRepository,
+        NotificationPublisher notificationPublisher)
     {
         public async Task<Guid> Handle(AssignShiftCommand request, CancellationToken cancellationToken)
         {
@@ -22,6 +26,7 @@ namespace CoinquiLindo.Application.Shifts.Commands
             var shift = new Shift(house.Id, tenant, room, request.StartDate, request.EndDate);
 
             await shiftRepository.AddAsync(shift, cancellationToken);
+            await notificationPublisher.ShiftAssignedAsync(shift, request.RequesterUserId, cancellationToken);
 
             return shift.Id;
         }

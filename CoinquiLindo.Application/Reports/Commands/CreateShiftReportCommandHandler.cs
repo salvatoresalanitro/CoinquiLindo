@@ -1,3 +1,4 @@
+using CoinquiLindo.Application.Notifications;
 using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 using CoinquiLindo.Domain.ValueObjects;
@@ -8,11 +9,12 @@ namespace CoinquiLindo.Application.Reports.Commands
     public class CreateShiftReportCommandHandler(
         IHouseRepository houseRepository,
         IShiftRepository shiftRepository,
-        IReportPhotoStorage photoStorage)
+        IReportPhotoStorage photoStorage,
+        NotificationPublisher notificationPublisher)
     {
         public async Task<ReportResponse> Handle(CreateShiftReportCommand request, CancellationToken cancellationToken)
         {
-            var (_, shift, reporter) = await ReportMapping.GetMemberShiftAsync(houseRepository, shiftRepository,
+            var (house, shift, reporter) = await ReportMapping.GetMemberShiftAsync(houseRepository, shiftRepository,
                 request.HouseId, request.ShiftId, request.RequesterUserId, cancellationToken);
 
             var photo = await ReadBoundedAsync(request.Photo, cancellationToken);
@@ -34,6 +36,8 @@ namespace CoinquiLindo.Application.Reports.Commands
                 await photoStorage.DeleteAsync(report.PhotoKey, CancellationToken.None);
                 throw;
             }
+
+            await notificationPublisher.ReportCreatedAsync(house, shift, report, cancellationToken);
 
             return report.ToResponse(shift, reporter.Id);
         }

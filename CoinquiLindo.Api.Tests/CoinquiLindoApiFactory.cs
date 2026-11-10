@@ -34,6 +34,8 @@ namespace CoinquiLindo.Api.Tests
             builder.UseSetting("Auth:Google:ClientId", "test-client-id.apps.googleusercontent.com");
             builder.UseSetting("Auth:Google:ClientSecret", "test-client-secret");
             builder.UseSetting("Auth:MobileCallbackUri", MobileCallbackUri);
+            // Tests trigger the due-soon job explicitly: a background timer would make them nondeterministic
+            builder.UseSetting("Notifications:SchedulerEnabled", "false");
 
             builder.ConfigureTestServices(services =>
             {

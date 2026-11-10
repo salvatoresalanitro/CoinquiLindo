@@ -1,0 +1,152 @@
+﻿@page "/notifications"
+@inject CoinquiLindoApiClient ApiClient
+@inject UnreadNotificationsState UnreadState
+@inject NavigationManager Navigation
+
+<div class="container mt-3 p-2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <a href="" class="btn btn-light btn-sm" aria-label="Torna alla home">←</a>
+            <h1 class="h4 mb-0">Notifiche</h1>
+        </div>
+        <button class="btn btn-link btn-sm" type="button" @onclick="MarkAllAsRead"
+                disabled="@(isMarkingAll || !notifications.Any(n => n.ReadAt is null))">
+            Segna tutte come lette
+        </button>
+    </div>
+
+    <ErrorAlert Error="error" OnRetry="LoadAsync" OnDismiss="() => error = null" />
+
+    @if (isLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status" aria-label="Caricamento"></div>
+        </div>
+    }
+    else if (notifications.Count == 0 && error is null)
+    {
+        <div class="text-center text-muted py-5">
+            <div class="notification-empty-icon" aria-hidden="true">🔕</div>
+            <p class="mb-0">Nessuna notifica, tutto tranquillo.</p>
+        </div>
+    }
+    else
+    {
+        <ul class="list-unstyled mb-0">
+            @foreach (var notification in notifications)
+            {
+                var isUnread = notification.ReadAt is null;
+                <li>
+                    <button type="button" class="notification-item @(isUnread ? "is-unread" : string.Empty)"
+                            @onclick="() => Open(notification)">
+                        <span class="notification-icon" aria-hidden="true">@Icon(notification.Type)</span>
+                        <span class="notification-text">
+                            <span class="notification-title">@notification.Title</span>
+                            <span class="notification-body">@notification.Body</span>
+                            <span class="notification-time">@RelativeTime(notification.CreatedAt)</span>
+                        </span>
+                        @if (isUnread)
+                        {
+                            <span class="notification-dot" aria-label="Non letta"></span>
+                        }
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    private List<NotificationResponse> notifications = [];
+    private bool isLoading = true;
+    private bool isMarkingAll;
+    private ApiError? error;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        error = null;
+
+        var result = await ApiClient.GetNotificationsAsync();
+        if (result.IsSuccess)
+        {
+            notifications = result.Value!;
+        }
+        else
+        {
+            error = result.Error;
+        }
+
+        isLoading = false;
+        await UnreadState.RefreshAsync();
+    }
+
+    private void Open(NotificationResponse notification)
+    {
+        if (notification.ReadAt is null)
+        {
+            // Navigation must not wait on (or fail because of) the read receipt
+            Replace(notification, notification with { ReadAt = DateTime.UtcNow });
+            UnreadState.SetUnreadCount(UnreadState.UnreadCount - 1);
+            _ = ApiClient.MarkNotificationAsReadAsync(notification.Id);
+        }
+
+        Navigation.NavigateTo($"/house/{notification.HouseId}");
+    }
+
+    private async Task MarkAllAsRead()
+    {
+        isMarkingAll = true;
+        error = null;
+
+        var result = await ApiClient.MarkAllNotificationsAsReadAsync();
+        if (result.IsSuccess)
+        {
+            notifications = notifications
+                .Select(n => n.ReadAt is null ? n with { ReadAt = DateTime.UtcNow } : n)
+                .ToList();
+            UnreadState.SetUnreadCount(0);
+        }
+        else
+        {
+            error = result.Error;
+        }
+
+        isMarkingAll = false;
+    }
+
+    private void Replace(NotificationResponse current, NotificationResponse updated)
+    {
+        var index = notifications.IndexOf(current);
+        if (index >= 0)
+        {
+            notifications[index] = updated;
+        }
+    }
+
+    private static string Icon(NotificationKind type) => type switch
+    {
+        NotificationKind.ShiftAssigned => "📅",
+        NotificationKind.ShiftDueSoon => "⏰",
+        NotificationKind.ReportCreated => "🚩",
+        NotificationKind.ReportVoted => "🗳️",
+        _ => "🔔"
+    };
+
+    // SQLite returns unspecified-kind values: they are always UTC
+    private static string RelativeTime(DateTime createdAt)
+    {
+        var createdAtUtc = DateTime.SpecifyKind(createdAt, DateTimeKind.Utc);
+        var elapsed = DateTime.UtcNow - createdAtUtc;
+        return elapsed switch
+        {
+            { TotalMinutes: < 1 } => "adesso",
+            { TotalMinutes: < 60 } => $"{(int)elapsed.TotalMinutes} min fa",
+            { TotalHours: < 24 } => $"{(int)elapsed.TotalHours} h fa",
+            { TotalDays: < 2 } => "ieri",
+            _ => createdAtUtc.ToLocalTime().ToString("dd/MM/yyyy")
+        };
+    }
+}

@@ -1,3 +1,4 @@
+using CoinquiLindo.Application.Notifications;
 using CoinquiLindo.Application.Reports;
 using CoinquiLindo.Application.Reports.Commands;
 using CoinquiLindo.Domain.Entities;
@@ -164,7 +165,8 @@ namespace Coinquilindo.Application.Tests
         }
 
         private CreateShiftReportCommandHandler CreateHandler() =>
-            new(_houseRepository, _shiftRepository, _photoStorage);
+            new(_houseRepository, _shiftRepository, _photoStorage,
+                new NotificationPublisher(Substitute.For<INotificationRepository>(), TimeProvider.System));
 
         private async Task AssertNoPhotoStoredAsync() =>
             await _photoStorage.DidNotReceive().SaveAsync(Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<CancellationToken>());

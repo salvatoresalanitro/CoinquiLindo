@@ -23,6 +23,7 @@ namespace CoinquiLindo.Client.Tests
         [InlineData("ReportVote.NotAllowed")]
         [InlineData("ReportVote.InvalidType")]
         [InlineData("ReportVote.Conflict")]
+        [InlineData("Notification.NotFound")]
         [InlineData("Shift.HouseRequired")]
         [InlineData("Shift.InvalidDateRange")]
         [InlineData("Shift.NotFound")]

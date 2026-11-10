@@ -24,6 +24,7 @@ namespace CoinquiLindo.Client
             ["ReportVote.NotAllowed"] = "Non puoi votare questa segnalazione.",
             ["ReportVote.InvalidType"] = "Voto non valido.",
             ["ReportVote.Conflict"] = "Il tuo voto è stato modificato nel frattempo. Riprova.",
+            ["Notification.NotFound"] = "La notifica non è più disponibile.",
             ["Shift.HouseRequired"] = "Il turno deve essere associato a una casa.",
             ["Shift.InvalidDateRange"] = "La data di fine turno deve essere successiva a quella di inizio.",
             ["Shift.NotFound"] = "Il turno selezionato non esiste in questa casa.",

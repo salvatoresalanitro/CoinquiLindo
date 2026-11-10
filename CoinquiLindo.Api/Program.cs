@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddInfrastructure("Data Source=coinquilindo.db");
 builder.Services.AddReportPhotoStorage();
+builder.Services.AddNotificationScheduler();
 builder.Services.AddCoinquiLindoAuthentication(builder.Configuration);
 builder.Services.AddReverseProxySupport(builder.Configuration);
 builder.Services.AddCoinquiLindoRateLimiting(builder.Configuration);
@@ -48,5 +49,6 @@ app.MapUserEndpoints();
 app.MapHouseEndpoints();
 app.MapShiftEndpoints();
 app.MapReportEndpoints();
+app.MapNotificationEndpoints();
 
 app.Run();
