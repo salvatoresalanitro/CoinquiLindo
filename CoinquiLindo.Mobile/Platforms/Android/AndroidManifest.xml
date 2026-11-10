@@ -1,8 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" android:networkSecurityConfig="${networkSecurityConfig}"></application>
+    <application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" android:networkSecurityConfig="${networkSecurityConfig}">
+        <!-- FCM (ADR-017): devices are addressed by Firebase Installation ID, delivered to PushMessagingService.OnRegistered -->
+        <meta-data android:name="firebase_messaging_installation_id_enabled" android:value="true" />
+        <!-- Background pushes land in the same channel created by MainApplication -->
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="coinquilindo_default" />
+    </application>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: runtime permission requested after sign-in -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Shift reports: photo is mandatory and camera-only (ADR-014) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />

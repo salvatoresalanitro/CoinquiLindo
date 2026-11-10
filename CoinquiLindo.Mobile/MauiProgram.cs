@@ -43,6 +43,7 @@ namespace CoinquiLindo.Mobile
             builder.Services.AddScoped<CoinquiLindoApiClient>();
             builder.Services.AddScoped<AuthClient>();
             builder.Services.AddScoped<UnreadNotificationsState>();
+            builder.Services.AddScoped<PushRegistrationService>();
 
             return builder.Build();
         }

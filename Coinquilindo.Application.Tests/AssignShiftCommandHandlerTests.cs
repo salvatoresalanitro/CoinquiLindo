@@ -1,4 +1,4 @@
-using CoinquiLindo.Application.Notifications;
+﻿using CoinquiLindo.Application.Notifications;
 using CoinquiLindo.Application.Shifts.Commands;
 using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Exceptions;
@@ -19,7 +19,7 @@ namespace Coinquilindo.Application.Tests
             _mockHouseRepository = Substitute.For<IHouseRepository>();
             _mockShiftRepository = Substitute.For<IShiftRepository>();
             _handler = new AssignShiftCommandHandler(_mockHouseRepository, _mockShiftRepository,
-                new NotificationPublisher(Substitute.For<INotificationRepository>(), TimeProvider.System));
+                new NotificationPublisher(Substitute.For<INotificationRepository>(), TimeProvider.System, Substitute.For<IPushDispatcher>()));
         }
 
         private static AssignShiftCommand Command(Guid houseId, Guid roomId, Guid tenantId, Guid requesterUserId) => new(

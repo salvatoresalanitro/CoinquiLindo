@@ -21,12 +21,18 @@ namespace CoinquiLindo.Infrastructure.Repositories
         public Task<User?> GetByRefreshTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default) =>
             UsersWithTokens().FirstOrDefaultAsync(u => u.RefreshTokens.Any(t => t.TokenHash == tokenHash), cancellationToken);
 
+        public Task<User?> GetByPushTokenAsync(string token, CancellationToken cancellationToken = default) =>
+            UsersWithTokens().FirstOrDefaultAsync(u => u.PushDevices.Any(d => d.Token == token), cancellationToken);
+
         public Task UpdateAsync(User user, CancellationToken cancellationToken = default)
         {
             // User is already tracked: Update() would mark new tokens as Modified
             return dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        private IQueryable<User> UsersWithTokens() => dbContext.Users.Include(u => u.RefreshTokens);
+        private IQueryable<User> UsersWithTokens() => dbContext.Users
+            .Include(u => u.RefreshTokens)
+            .Include(u => u.PushDevices)
+            .AsSplitQuery();
     }
 }

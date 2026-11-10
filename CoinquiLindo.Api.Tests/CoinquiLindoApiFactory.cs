@@ -13,12 +13,14 @@ namespace CoinquiLindo.Api.Tests
 {
     public class CoinquiLindoApiFactory : WebApplicationFactory<Program>
     {
-        // Kept open for the factory lifetime: the in-memory database is dropped when it closes
+        // Named shared-cache in-memory database: each DbContext gets its own connection, so background
+        // workers (push dispatch) can run concurrently with requests. The keeper connection keeps it alive.
+        private readonly string _connectionString = $"DataSource=file:coinquilindo-{Guid.NewGuid():N}?mode=memory&cache=shared";
         private readonly SqliteConnection _connection;
 
         public CoinquiLindoApiFactory()
         {
-            _connection = new SqliteConnection("DataSource=:memory:");
+            _connection = new SqliteConnection(_connectionString);
             _connection.Open();
         }
 
@@ -42,7 +44,7 @@ namespace CoinquiLindo.Api.Tests
                 services.RemoveAll<DbContextOptions<AppDbContext>>();
                 services.RemoveAll<IDbContextOptionsConfiguration<AppDbContext>>();
                 services.AddDbContext<AppDbContext>(
-                    options => options.UseSqlite(_connection),
+                    options => options.UseSqlite(_connectionString),
                     optionsLifetime: ServiceLifetime.Singleton);
             });
         }

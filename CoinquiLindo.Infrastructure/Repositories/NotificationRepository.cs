@@ -27,6 +27,9 @@ namespace CoinquiLindo.Infrastructure.Repositories
             dbContext.Notifications.FirstOrDefaultAsync(
                 n => n.Id == notificationId && n.RecipientUserId == recipientUserId, cancellationToken);
 
+        public Task<Notification?> FindAsync(Guid notificationId, CancellationToken cancellationToken = default) =>
+            dbContext.Notifications.AsNoTracking().FirstOrDefaultAsync(n => n.Id == notificationId, cancellationToken);
+
         public Task<Notification?> GetUnreadForReportAsync(Guid recipientUserId, NotificationType type, Guid reportId, CancellationToken cancellationToken = default) =>
             dbContext.Notifications.FirstOrDefaultAsync(
                 n => n.RecipientUserId == recipientUserId && n.Type == type && n.ReportId == reportId && n.ReadAt == null,

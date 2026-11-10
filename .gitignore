@@ -428,3 +428,17 @@ FodyWeavers.xsd
 .github
 # Private report photos (ADR-014): user data, never committed
 **/App_Data/report-photos/
+
+# Local SQLite databases (dev data, may contain real accounts): schema lives in EF migrations
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Firebase config and credentials (per-project, downloaded from the Firebase console)
+**/Platforms/Android/google-services.json
+**/Platforms/iOS/GoogleService-Info.plist
+**/Platforms/MacCatalyst/GoogleService-Info.plist
+*firebase-adminsdk*.json
+# APNs auth keys (iOS push, phase 5c-3)
+*.p8

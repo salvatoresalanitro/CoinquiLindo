@@ -3,6 +3,7 @@
 @inject AuthClient AuthClient
 @inject SecureTokenStore TokenStore
 @inject NavigationManager Navigation
+@inject PushRegistrationService PushRegistration
 
 @if (isCheckingSession)
 {
@@ -43,12 +44,29 @@ else
         }
 
         isCheckingSession = false;
+
+        // A push tapped while the app was closed: open the inbox once the session is confirmed
+        PushBridge.PendingRouteChanged += OnPendingRouteChanged;
+        OnPendingRouteChanged();
+        _ = PushRegistration.StartAsync();
     }
+
+    private void OnPendingRouteChanged() => _ = InvokeAsync(() =>
+    {
+        if (PushBridge.ConsumePendingRoute() is { } route)
+        {
+            Navigation.NavigateTo(route);
+        }
+    });
 
     // Raised from the HTTP pipeline (refresh rejected) or by logout: may not run on the renderer thread
     private void OnSessionEnded() => _ = InvokeAsync(GoToLogin);
 
     private void GoToLogin() => Navigation.NavigateTo("/login", replace: true);
 
-    public void Dispose() => TokenStore.SessionEnded -= OnSessionEnded;
+    public void Dispose()
+    {
+        TokenStore.SessionEnded -= OnSessionEnded;
+        PushBridge.PendingRouteChanged -= OnPendingRouteChanged;
+    }
 }

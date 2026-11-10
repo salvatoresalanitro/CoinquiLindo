@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Enums;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
@@ -6,7 +6,10 @@ using CoinquiLindo.Domain.RepositoriesInterfaces;
 namespace CoinquiLindo.Application.Notifications
 {
     // Called after the main change is saved: a failed notification never fails the user's request
-    public class NotificationPublisher(INotificationRepository notificationRepository, TimeProvider timeProvider)
+    public class NotificationPublisher(
+        INotificationRepository notificationRepository,
+        TimeProvider timeProvider,
+        IPushDispatcher pushDispatcher)
     {
         private const int DescriptionPreviewLength = 100;
 
@@ -17,7 +20,7 @@ namespace CoinquiLindo.Application.Notifications
                 return;
             }
 
-            await notificationRepository.TryAddAsync(new Notification(recipient, NotificationType.ShiftAssigned,
+            await StoreAsync(new Notification(recipient, NotificationType.ShiftAssigned,
                 shift.HouseId, shift.Id, null,
                 "Nuovo turno assegnato",
                 $"{shift.AssignedRoom.Name}: dal {FormatDate(shift.StartDate)} al {FormatDate(shift.EndDate)}.",
@@ -41,7 +44,7 @@ namespace CoinquiLindo.Application.Notifications
                     ? $"{report.Reporter.Name} ha segnalato il tuo turno {shift.AssignedRoom.Name}: {description}"
                     : $"{report.Reporter.Name} ha segnalato il turno {shift.AssignedRoom.Name} di {shift.AssignedTenant.Name}: {description}";
 
-                await notificationRepository.TryAddAsync(new Notification(recipient, NotificationType.ReportCreated,
+                await StoreAsync(new Notification(recipient, NotificationType.ReportCreated,
                     shift.HouseId, shift.Id, report.Id, title, body, Now), cancellationToken);
             }
         }
@@ -62,11 +65,15 @@ namespace CoinquiLindo.Application.Notifications
             if (existing is not null)
             {
                 existing.Refresh(title, body, Now);
-                await notificationRepository.TryUpdateAsync(existing, cancellationToken);
+                if (await notificationRepository.TryUpdateAsync(existing, cancellationToken))
+                {
+                    pushDispatcher.Enqueue(existing.Id);
+                }
+
                 return;
             }
 
-            await notificationRepository.TryAddAsync(new Notification(recipient, NotificationType.ReportVoted,
+            await StoreAsync(new Notification(recipient, NotificationType.ReportVoted,
                 shift.HouseId, shift.Id, report.Id, title, body, Now), cancellationToken);
         }
 
@@ -84,12 +91,24 @@ namespace CoinquiLindo.Application.Notifications
             }
 
             var remaining = shift.Checklist.Count(item => !item.IsCompleted);
-            return await notificationRepository.TryAddAsync(new Notification(recipient, NotificationType.ShiftDueSoon,
+            return await StoreAsync(new Notification(recipient, NotificationType.ShiftDueSoon,
                 shift.HouseId, shift.Id, null,
                 "Turno in scadenza",
                 $"Il turno {shift.AssignedRoom.Name} scade il {FormatDate(shift.EndDate)}: "
                     + (remaining == 1 ? "manca 1 attività." : $"mancano {remaining} attività."),
                 Now), cancellationToken);
+        }
+
+        // Only notifications actually stored are pushed: the push payload points to the in-app inbox
+        private async Task<bool> StoreAsync(Notification notification, CancellationToken cancellationToken)
+        {
+            if (!await notificationRepository.TryAddAsync(notification, cancellationToken))
+            {
+                return false;
+            }
+
+            pushDispatcher.Enqueue(notification.Id);
+            return true;
         }
 
         private DateTime Now => timeProvider.GetUtcNow().UtcDateTime;

@@ -1,4 +1,4 @@
-using CoinquiLindo.Application.Notifications;
+﻿using CoinquiLindo.Application.Notifications;
 using CoinquiLindo.Application.Reports.Commands;
 using CoinquiLindo.Application.Reports.Queries;
 using CoinquiLindo.Application.Shifts.Queries;
@@ -159,7 +159,7 @@ namespace Coinquilindo.Application.Tests
         }
 
         private CastReportVoteCommandHandler CastHandler() => new(_houseRepository, _shiftRepository,
-            new NotificationPublisher(Substitute.For<INotificationRepository>(), TimeProvider.System));
+            new NotificationPublisher(Substitute.For<INotificationRepository>(), TimeProvider.System, Substitute.For<IPushDispatcher>()));
 
         private RemoveReportVoteCommandHandler RemoveHandler() => new(_houseRepository, _shiftRepository);
 

@@ -211,6 +211,26 @@ namespace CoinquiLindo.Client
             return error is null ? ApiResult.Success() : ApiResult.Failure(error);
         }
 
+        public async Task<ApiResult> RegisterPushDeviceAsync(string token, PushPlatformValue platform, CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.PutAsJsonAsync("/api/me/devices", new RegisterPushDeviceRequest(token, platform), ct),
+                readBody: false,
+                cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
+        public async Task<ApiResult> UnregisterPushDeviceAsync(string token, CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.PostAsJsonAsync("/api/me/devices/unregister", new UnregisterPushDeviceRequest(token), ct),
+                readBody: false,
+                cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
         public async Task<ApiResult<ReportPhotoData>> GetReportPhotoAsync(string photoUrl, CancellationToken cancellationToken = default)
         {
             // The bearer token is attached to every request: only API-relative paths are allowed

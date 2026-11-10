@@ -113,6 +113,38 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.PushDevice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("LastSeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Platform")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PushDevices", (string)null);
+                });
+
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -364,6 +396,15 @@ namespace CoinquiLindo.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.PushDevice", b =>
+                {
+                    b.HasOne("CoinquiLindo.Domain.Entities.User", null)
+                        .WithMany("PushDevices")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("CoinquiLindo.Domain.Entities.User", null)
@@ -480,6 +521,8 @@ namespace CoinquiLindo.Infrastructure.Migrations
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.User", b =>
                 {
+                    b.Navigation("PushDevices");
+
                     b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618

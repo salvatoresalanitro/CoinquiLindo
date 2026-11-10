@@ -8,6 +8,7 @@ namespace CoinquiLindo.Domain.RepositoriesInterfaces
         Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
         Task<User?> GetByGoogleSubjectAsync(string googleSubject, CancellationToken cancellationToken = default);
         Task<User?> GetByRefreshTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default);
+        Task<User?> GetByPushTokenAsync(string token, CancellationToken cancellationToken = default);
         Task UpdateAsync(User user, CancellationToken cancellationToken = default);
     }
 }

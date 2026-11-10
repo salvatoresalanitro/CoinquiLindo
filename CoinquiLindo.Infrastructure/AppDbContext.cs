@@ -88,6 +88,19 @@ namespace CoinquiLindo.Infrastructure
                 b.HasMany(u => u.RefreshTokens).WithOne().HasForeignKey("UserId").IsRequired().OnDelete(DeleteBehavior.Cascade);
                 b.Metadata.FindNavigation(nameof(User.RefreshTokens))!
                     .SetPropertyAccessMode(PropertyAccessMode.Field);
+
+                b.HasMany(u => u.PushDevices).WithOne().HasForeignKey("UserId").IsRequired().OnDelete(DeleteBehavior.Cascade);
+                b.Metadata.FindNavigation(nameof(User.PushDevices))!
+                    .SetPropertyAccessMode(PropertyAccessMode.Field);
+            });
+
+            // A token identifies one app install: it can belong to a single account at a time
+            modelBuilder.Entity<PushDevice>(b =>
+            {
+                b.ToTable("PushDevices");
+                b.HasKey(d => d.Id);
+                b.Property(d => d.Token).HasMaxLength(PushDevice.MaxTokenLength);
+                b.HasIndex(d => d.Token).IsUnique();
             });
 
             modelBuilder.Entity<RefreshToken>(b =>

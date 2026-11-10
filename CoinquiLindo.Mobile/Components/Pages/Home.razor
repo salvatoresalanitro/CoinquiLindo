@@ -2,6 +2,7 @@
 @inject CoinquiLindoApiClient ApiClient
 @inject AuthClient AuthClient
 @inject NavigationManager Navigation
+@inject PushRegistrationService PushRegistration
 
 <div class="container mt-4 p-3">
     <div class="d-flex justify-content-between align-items-center">
@@ -145,6 +146,8 @@
     private async Task HandleLogout()
     {
         isLoggingOut = true;
+        // Before logout: the device must stop receiving this account's pushes
+        await PushRegistration.UnregisterAsync();
         await AuthClient.LogoutAsync();
         isLoggingOut = false;
     }

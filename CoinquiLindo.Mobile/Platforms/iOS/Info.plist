@@ -49,7 +49,7 @@
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>com.companyname.coinquilindo.mobile.auth</string>
+            <string>com.salvatoresalanitro.coinquilindo.auth</string>
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>coinquilindo</string>

@@ -94,6 +94,39 @@ namespace CoinquiLindo.Client.Tests
             result.Error!.UserMessage.Should().Be(ErrorMessageProvider.GetMessage("Notification.NotFound", 404));
         }
 
+        [Fact]
+        public async Task RegisterPushDevice_Should_PutTokenAndPlatformAsString()
+        {
+            var handler = new StubHttpMessageHandler(async (request, ct) =>
+            {
+                request.Method.Should().Be(HttpMethod.Put);
+                request.RequestUri!.PathAndQuery.Should().Be("/api/me/devices");
+                var body = await request.Content!.ReadAsStringAsync(ct);
+                body.Should().Contain("\"token\":\"fcm-token\"").And.Contain("\"platform\":\"Android\"");
+                return new HttpResponseMessage(HttpStatusCode.NoContent);
+            });
+
+            var result = await CreateClient(handler).RegisterPushDeviceAsync("fcm-token", PushPlatformValue.Android);
+
+            result.IsSuccess.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UnregisterPushDevice_Should_PostTokenInBody()
+        {
+            var handler = new StubHttpMessageHandler(async (request, ct) =>
+            {
+                request.Method.Should().Be(HttpMethod.Post);
+                request.RequestUri!.PathAndQuery.Should().Be("/api/me/devices/unregister");
+                (await request.Content!.ReadAsStringAsync(ct)).Should().Contain("\"token\":\"fcm-token\"");
+                return new HttpResponseMessage(HttpStatusCode.NoContent);
+            });
+
+            var result = await CreateClient(handler).UnregisterPushDeviceAsync("fcm-token");
+
+            result.IsSuccess.Should().BeTrue();
+        }
+
         private static CoinquiLindoApiClient CreateClient(HttpMessageHandler handler) =>
             new(new HttpClient(handler) { BaseAddress = new Uri("http://localhost") },
                 NullLogger<CoinquiLindoApiClient>.Instance);

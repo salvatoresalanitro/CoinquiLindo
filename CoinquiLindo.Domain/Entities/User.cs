@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using CoinquiLindo.Domain.Enums;
 using CoinquiLindo.Domain.Exceptions;
 
 namespace CoinquiLindo.Domain.Entities
@@ -6,14 +7,19 @@ namespace CoinquiLindo.Domain.Entities
     // Account identified by Google "sub" (stable), not by email (can change)
     public class User
     {
+        // Bounds stale registrations (reinstalls, old phones): the least recently seen device is dropped
+        public const int MaxPushDevices = 10;
+
         public Guid Id { get; private set; }
         public string GoogleSubject { get; private set; }
         public string Email { get; private set; }
         public string DisplayName { get; private set; }
 
         private readonly List<RefreshToken> _refreshTokens = new();
+        private readonly List<PushDevice> _pushDevices = new();
 
         public IReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
+        public IReadOnlyCollection<PushDevice> PushDevices => _pushDevices.AsReadOnly();
 
         public User(string googleSubject, string email, string? displayName)
         {
@@ -57,6 +63,44 @@ namespace CoinquiLindo.Domain.Entities
         {
             _refreshTokens.FirstOrDefault(t => t.TokenHash == tokenHash)?.Revoke(now);
         }
+
+        public PushDevice RegisterPushDevice(string token, PushPlatform platform, DateTime now)
+        {
+            var normalized = token?.Trim();
+            if (string.IsNullOrEmpty(normalized))
+            {
+                throw new DomainValidationException("PushDevice.TokenRequired", "A push token is required.");
+            }
+
+            if (normalized.Length > PushDevice.MaxTokenLength)
+            {
+                throw new DomainValidationException("PushDevice.TokenInvalid", "The push token is too long.");
+            }
+
+            if (!Enum.IsDefined(platform))
+            {
+                throw new DomainValidationException("PushDevice.InvalidPlatform", "Unknown push platform.");
+            }
+
+            var existing = _pushDevices.FirstOrDefault(d => d.Token == normalized);
+            if (existing is not null)
+            {
+                existing.Touch(platform, now);
+                return existing;
+            }
+
+            if (_pushDevices.Count >= MaxPushDevices)
+            {
+                _pushDevices.Remove(_pushDevices.MinBy(d => d.LastSeenAt)!);
+            }
+
+            var device = new PushDevice(normalized, platform, now);
+            _pushDevices.Add(device);
+            return device;
+        }
+
+        public bool RemovePushDevice(string token) =>
+            _pushDevices.RemoveAll(d => d.Token == token?.Trim()) > 0;
 
         [MemberNotNull(nameof(Email), nameof(DisplayName))]
         private void SetProfile(string email, string? displayName)

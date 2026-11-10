@@ -12,6 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure("Data Source=coinquilindo.db");
 builder.Services.AddReportPhotoStorage();
 builder.Services.AddNotificationScheduler();
+builder.Services.AddPushNotifications(builder.Configuration);
 builder.Services.AddCoinquiLindoAuthentication(builder.Configuration);
 builder.Services.AddReverseProxySupport(builder.Configuration);
 builder.Services.AddCoinquiLindoRateLimiting(builder.Configuration);
@@ -50,5 +51,6 @@ app.MapHouseEndpoints();
 app.MapShiftEndpoints();
 app.MapReportEndpoints();
 app.MapNotificationEndpoints();
+app.MapDeviceEndpoints();
 
 app.Run();

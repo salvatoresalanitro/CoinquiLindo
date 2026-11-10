@@ -22,6 +22,7 @@ namespace Coinquilindo.Application.Tests
         private readonly IHouseRepository _houseRepository = Substitute.For<IHouseRepository>();
         private readonly IShiftRepository _shiftRepository = Substitute.For<IShiftRepository>();
         private readonly INotificationRepository _notifications = Substitute.For<INotificationRepository>();
+        private readonly IPushDispatcher _pushDispatcher = Substitute.For<IPushDispatcher>();
         private readonly TimeProvider _clock = AuthTestDoubles.Clock(Now);
         private readonly List<Notification> _added = [];
 
@@ -31,7 +32,56 @@ namespace Coinquilindo.Application.Tests
             _notifications.TryUpdateAsync(Arg.Any<Notification>(), Arg.Any<CancellationToken>()).Returns(true);
         }
 
-        private NotificationPublisher Publisher => new(_notifications, _clock);
+        private NotificationPublisher Publisher => new(_notifications, _clock, _pushDispatcher);
+
+        [Fact]
+        public async Task StoredNotifications_Should_BeQueuedForPush()
+        {
+            var scenario = Arrange();
+            var shift = scenario.CreateShift();
+            _shiftRepository.GetByIdAsync(scenario.House.Id, shift.Id, Arg.Any<CancellationToken>()).Returns(shift);
+
+            await new CreateShiftReportCommandHandler(_houseRepository, _shiftRepository,
+                    Substitute.For<IReportPhotoStorage>(), Publisher)
+                .Handle(new CreateShiftReportCommand(scenario.House.Id, shift.Id, "Pavimento sporco",
+                    new MemoryStream(PngPhoto), scenario.Reporter.Id), CancellationToken.None);
+
+            _added.Should().HaveCount(2);
+            foreach (var notification in _added)
+            {
+                _pushDispatcher.Received(1).Enqueue(notification.Id);
+            }
+        }
+
+        [Fact]
+        public async Task NotificationsThatCannotBeStored_Should_NotBePushed()
+        {
+            var scenario = Arrange();
+            _notifications.TryAddAsync(Arg.Any<Notification>(), Arg.Any<CancellationToken>()).Returns(false);
+
+            await new AssignShiftCommandHandler(_houseRepository, _shiftRepository, Publisher).Handle(
+                new AssignShiftCommand(scenario.House.Id, RoomId: scenario.Room.Id, TenantId: scenario.AssigneeTenant.Id,
+                    Now.UtcDateTime, Now.UtcDateTime.AddDays(7), scenario.Reporter.Id),
+                CancellationToken.None);
+
+            _pushDispatcher.DidNotReceive().Enqueue(Arg.Any<Guid>());
+        }
+
+        [Fact]
+        public async Task RefreshedVoteNotification_Should_BePushedAgain()
+        {
+            var scenario = Arrange();
+            var (shift, report) = scenario.CreateShiftWithReport();
+            _shiftRepository.GetByIdAsync(scenario.House.Id, shift.Id, Arg.Any<CancellationToken>()).Returns(shift);
+            var existing = new Notification(scenario.Reporter.Id, NotificationType.ReportVoted, scenario.House.Id,
+                shift.Id, report.Id, "Nuovi voti sulla tua segnalazione", "vecchio testo", Now.UtcDateTime.AddHours(-1));
+            _notifications.GetUnreadForReportAsync(scenario.Reporter.Id, NotificationType.ReportVoted, report.Id, Arg.Any<CancellationToken>())
+                .Returns(existing);
+
+            await CastVoteAsync(scenario, shift, report, ReportVoteValue.Up);
+
+            _pushDispatcher.Received(1).Enqueue(existing.Id);
+        }
 
         [Fact]
         public async Task AssignShift_Should_NotifyAssignee_When_AssignedBySomeoneElse()
