@@ -7,6 +7,61 @@
     background: #f8f9fa;
 }
 
+.min-w-0 {
+    min-width: 0;
+}
+
+.report-votes {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 2.25rem;
+}
+
+.report-vote-btn {
+    width: 2.25rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: #6c757d;
+    font-size: 1rem;
+    line-height: 1;
+    transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.report-vote-btn:not(:disabled):active {
+    transform: scale(0.9);
+}
+
+.report-vote-btn:disabled {
+    opacity: 0.35;
+}
+
+.report-vote-btn.is-up {
+    color: #fff;
+    background: #fd7e14;
+}
+
+.report-vote-btn.is-down {
+    color: #fff;
+    background: #6f42c1;
+}
+
+.report-score {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #495057;
+}
+
+.report-score.is-up {
+    color: #fd7e14;
+}
+
+.report-score.is-down {
+    color: #6f42c1;
+}
+
 .report-photo-preview {
     position: relative;
 }

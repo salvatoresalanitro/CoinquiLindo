@@ -1,4 +1,5 @@
-﻿using CoinquiLindo.Domain.Exceptions;
+﻿using CoinquiLindo.Domain.Enums;
+using CoinquiLindo.Domain.Exceptions;
 
 namespace CoinquiLindo.Domain.Entities
 {
@@ -68,6 +69,37 @@ namespace CoinquiLindo.Domain.Entities
 
             _reports.Add(report);
         }
+
+        public bool CanReport(Guid tenantId) => tenantId != AssignedTenant.Id;
+
+        // The reporter already backs the report and the assignee has a conflict of interest
+        public bool CanVoteOnReport(Report report, Guid tenantId) =>
+            tenantId != report.Reporter.Id && tenantId != AssignedTenant.Id;
+
+        public void VoteReport(Guid reportId, Tenant voter, VoteType type)
+        {
+            ArgumentNullException.ThrowIfNull(voter, nameof(voter));
+
+            if (!Enum.IsDefined(type))
+            {
+                throw new DomainValidationException("ReportVote.InvalidType", "A vote must be Up or Down.");
+            }
+
+            var report = GetReport(reportId);
+            if (!CanVoteOnReport(report, voter.Id))
+            {
+                throw new ReportVoteNotAllowedException();
+            }
+
+            report.SetVote(voter.Id, type);
+        }
+
+        public void RemoveReportVote(Guid reportId, Guid voterTenantId) =>
+            GetReport(reportId).RemoveVote(voterTenantId);
+
+        public Report GetReport(Guid reportId) =>
+            _reports.FirstOrDefault(report => report.Id == reportId)
+                ?? throw new NotFoundException(nameof(Report), reportId);
 
         public bool IsShiftFullyCompleted => _checklist.All(c => c.IsCompleted);
 

@@ -125,6 +125,39 @@ namespace CoinquiLindo.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.ReportVote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ReportId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("VoterTenantId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VoterTenantId");
+
+                    b.HasIndex("ReportId", "VoterTenantId")
+                        .IsUnique();
+
+                    b.ToTable("ReportVotes", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ReportVotes_Type", "\"Type\" IN (-1, 1)");
+                        });
+                });
+
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Room", b =>
                 {
                     b.Property<Guid>("Id")
@@ -285,6 +318,21 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Navigation("Reporter");
                 });
 
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.ReportVote", b =>
+                {
+                    b.HasOne("CoinquiLindo.Domain.Entities.Report", null)
+                        .WithMany("Votes")
+                        .HasForeignKey("ReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CoinquiLindo.Domain.Entities.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("VoterTenantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Room", b =>
                 {
                     b.HasOne("CoinquiLindo.Domain.Entities.House", null)
@@ -341,6 +389,11 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Navigation("Rooms");
 
                     b.Navigation("Tenants");
+                });
+
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.Report", b =>
+                {
+                    b.Navigation("Votes");
                 });
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Room", b =>

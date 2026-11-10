@@ -9,10 +9,10 @@ namespace CoinquiLindo.Application.Reports.Queries
     {
         public async Task<ReportResponse> Handle(GetShiftReportQuery request, CancellationToken cancellationToken)
         {
-            var (_, shift) = await ReportMapping.GetMemberShiftAsync(houseRepository, shiftRepository,
+            var (_, shift, requester) = await ReportMapping.GetMemberShiftAsync(houseRepository, shiftRepository,
                 request.HouseId, request.ShiftId, request.RequesterUserId, cancellationToken);
 
-            return shift.GetReport(request.ReportId).ToResponse(shift);
+            return shift.GetReport(request.ReportId).ToResponse(shift, requester.Id);
         }
     }
 }

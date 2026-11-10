@@ -1,11 +1,15 @@
 ﻿using CoinquiLindo.Domain.Entities;
+using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
 namespace CoinquiLindo.Infrastructure.Repositories
 {
     public class ShiftRepository(AppDbContext dbContext) : IShiftRepository
     {
+        private const int SqliteUniqueConstraintError = 2067;
+
         public Task AddAsync(Shift shift, CancellationToken cancellationToken = default)
         {
             dbContext.Shifts.Add(shift);
@@ -20,6 +24,7 @@ namespace CoinquiLindo.Infrastructure.Repositories
                 .Include(shift => shift.AssignedRoom)
                 .Include(shift => shift.Checklist)
                 .Include(shift => shift.Reports).ThenInclude(report => report.Reporter)
+                .Include(shift => shift.Reports).ThenInclude(report => report.Votes)
                 .AsSplitQuery()
                 .OrderByDescending(shift => shift.StartDate)
                 .ThenBy(shift => shift.Id)
@@ -30,10 +35,27 @@ namespace CoinquiLindo.Infrastructure.Repositories
                 .Include(shift => shift.AssignedTenant)
                 .Include(shift => shift.Checklist)
                 .Include(shift => shift.Reports).ThenInclude(report => report.Reporter)
+                .Include(shift => shift.Reports).ThenInclude(report => report.Votes)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(shift => shift.HouseId == houseId && shift.Id == shiftId, cancellationToken);
 
-        public Task UpdateAsync(Shift shift, CancellationToken cancellationToken = default) =>
-            dbContext.SaveChangesAsync(cancellationToken);
+        public async Task UpdateAsync(Shift shift, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            // Same vote inserted twice, or changed/removed after another request already removed it
+            catch (DbUpdateConcurrencyException ex) when (ex.Entries.Count > 0 && ex.Entries.All(entry => entry.Entity is ReportVote))
+            {
+                throw new ReportVoteConflictException();
+            }
+            catch (DbUpdateException ex) when (
+                ex.InnerException is SqliteException { SqliteExtendedErrorCode: SqliteUniqueConstraintError } sqlite
+                && sqlite.Message.Contains("ReportVotes.", StringComparison.Ordinal))
+            {
+                throw new ReportVoteConflictException();
+            }
+        }
     }
 }

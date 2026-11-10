@@ -12,9 +12,8 @@ namespace CoinquiLindo.Application.Reports.Commands
     {
         public async Task<ReportResponse> Handle(CreateShiftReportCommand request, CancellationToken cancellationToken)
         {
-            var (house, shift) = await ReportMapping.GetMemberShiftAsync(houseRepository, shiftRepository,
+            var (_, shift, reporter) = await ReportMapping.GetMemberShiftAsync(houseRepository, shiftRepository,
                 request.HouseId, request.ShiftId, request.RequesterUserId, cancellationToken);
-            var reporter = house.Tenants.First(tenant => tenant.UserId == request.RequesterUserId);
 
             var photo = await ReadBoundedAsync(request.Photo, cancellationToken);
             var format = ReportPhotoFormat.Detect(photo);
@@ -36,7 +35,7 @@ namespace CoinquiLindo.Application.Reports.Commands
                 throw;
             }
 
-            return report.ToResponse(shift);
+            return report.ToResponse(shift, reporter.Id);
         }
 
         // Reads at most MaxBytes + 1 so oversized uploads are rejected without buffering them entirely

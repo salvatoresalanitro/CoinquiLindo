@@ -16,6 +16,7 @@ namespace CoinquiLindo.Application.Shifts.Queries
                 ?? throw new NotFoundException(nameof(House), request.HouseId);
 
             house.EnsureIsMember(request.RequesterUserId);
+            var requesterTenantId = house.GetRequesterTenant(request.RequesterUserId).Id;
 
             var shifts = await shiftRepository.GetByHouseIdAsync(request.HouseId, cancellationToken);
 
@@ -37,7 +38,8 @@ namespace CoinquiLindo.Application.Shifts.Queries
                         item.IsCompleted,
                         item.CompletedAt))
                     .ToList(),
-                shift.ToReportResponses()))
+                shift.ToReportResponses(requesterTenantId),
+                shift.CanReport(requesterTenantId)))
                 .ToList();
         }
     }

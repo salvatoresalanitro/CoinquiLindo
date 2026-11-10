@@ -16,7 +16,7 @@ namespace CoinquiLindo.Client.Tests
             var houseId = Guid.NewGuid();
             var shiftId = Guid.NewGuid();
             var expected = new ReportResponse(Guid.NewGuid(), shiftId, Guid.NewGuid(), "Salvo", "Pavimento sporco",
-                $"/api/houses/{houseId}/shifts/{shiftId}/reports/x/photo", DateTime.UtcNow);
+                $"/api/houses/{houseId}/shifts/{shiftId}/reports/x/photo", DateTime.UtcNow, 0, 0, 0, null, true);
             var handler = new StubHttpMessageHandler(async (request, ct) =>
             {
                 request.Method.Should().Be(HttpMethod.Post);
@@ -58,7 +58,7 @@ namespace CoinquiLindo.Client.Tests
             var houseId = Guid.NewGuid();
             var shiftId = Guid.NewGuid();
             var report = new ReportResponse(Guid.NewGuid(), shiftId, Guid.NewGuid(), "Salvo", "Pavimento sporco",
-                "/photo", DateTime.UtcNow);
+                "/photo", DateTime.UtcNow, 2, 1, 1, ReportVoteValue.Down, true);
             var handler = new StubHttpMessageHandler((request, _) =>
             {
                 request.RequestUri!.PathAndQuery.Should().Be($"/api/houses/{houseId}/shifts/{shiftId}/reports");
@@ -105,6 +105,62 @@ namespace CoinquiLindo.Client.Tests
 
             result.IsSuccess.Should().BeFalse();
             handler.LastRequest.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task CastReportVote_Should_PutVoteAsStringAndReadUpdatedReport()
+        {
+            var houseId = Guid.NewGuid();
+            var shiftId = Guid.NewGuid();
+            var reportId = Guid.NewGuid();
+            var expected = new ReportResponse(reportId, shiftId, Guid.NewGuid(), "Salvo", "Pavimento sporco", "/photo",
+                DateTime.UtcNow, 1, 0, 1, ReportVoteValue.Up, true);
+            var handler = new StubHttpMessageHandler(async (request, ct) =>
+            {
+                request.Method.Should().Be(HttpMethod.Put);
+                request.RequestUri!.PathAndQuery.Should().Be($"/api/houses/{houseId}/shifts/{shiftId}/reports/{reportId}/vote");
+                (await request.Content!.ReadAsStringAsync(ct)).Should().Contain("\"vote\":\"Up\"");
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(expected) };
+            });
+
+            var result = await CreateClient(handler).CastReportVoteAsync(houseId, shiftId, reportId, ReportVoteValue.Up);
+
+            result.IsSuccess.Should().BeTrue();
+            result.Value.Should().BeEquivalentTo(expected);
+        }
+
+        [Fact]
+        public async Task RemoveReportVote_Should_DeleteVoteAndReadUpdatedReport()
+        {
+            var houseId = Guid.NewGuid();
+            var shiftId = Guid.NewGuid();
+            var reportId = Guid.NewGuid();
+            var expected = new ReportResponse(reportId, shiftId, Guid.NewGuid(), "Salvo", "Pavimento sporco", "/photo",
+                DateTime.UtcNow, 0, 0, 0, null, true);
+            var handler = new StubHttpMessageHandler((request, _) =>
+            {
+                request.Method.Should().Be(HttpMethod.Delete);
+                request.RequestUri!.PathAndQuery.Should().Be($"/api/houses/{houseId}/shifts/{shiftId}/reports/{reportId}/vote");
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(expected) });
+            });
+
+            var result = await CreateClient(handler).RemoveReportVoteAsync(houseId, shiftId, reportId);
+
+            result.IsSuccess.Should().BeTrue();
+            result.Value!.MyVote.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task CastReportVote_Should_MapConflictToItalianMessage()
+        {
+            var handler = StubHttpMessageHandler.ReturningProblem(HttpStatusCode.Conflict, "ReportVote.Conflict");
+
+            var result = await CreateClient(handler)
+                .CastReportVoteAsync(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), ReportVoteValue.Down);
+
+            result.IsSuccess.Should().BeFalse();
+            result.Error!.Status.Should().Be(409);
+            result.Error.UserMessage.Should().Be(ErrorMessageProvider.GetMessage("ReportVote.Conflict", 409));
         }
 
         private static CoinquiLindoApiClient CreateClient(HttpMessageHandler handler) =>

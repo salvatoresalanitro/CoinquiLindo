@@ -136,6 +136,36 @@ namespace CoinquiLindo.Client
             return error is null ? ApiResult<List<ReportResponse>>.Success(value!) : ApiResult<List<ReportResponse>>.Failure(error);
         }
 
+        public async Task<ApiResult<ReportResponse>> CastReportVoteAsync(
+            Guid houseId,
+            Guid shiftId,
+            Guid reportId,
+            ReportVoteValue vote,
+            CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<ReportResponse>(
+                ct => httpClient.PutAsJsonAsync(
+                    $"/api/houses/{houseId}/shifts/{shiftId}/reports/{reportId}/vote", new CastReportVoteRequest(vote), ct),
+                readBody: true,
+                cancellationToken);
+
+            return error is null ? ApiResult<ReportResponse>.Success(value!) : ApiResult<ReportResponse>.Failure(error);
+        }
+
+        public async Task<ApiResult<ReportResponse>> RemoveReportVoteAsync(
+            Guid houseId,
+            Guid shiftId,
+            Guid reportId,
+            CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<ReportResponse>(
+                ct => httpClient.DeleteAsync($"/api/houses/{houseId}/shifts/{shiftId}/reports/{reportId}/vote", ct),
+                readBody: true,
+                cancellationToken);
+
+            return error is null ? ApiResult<ReportResponse>.Success(value!) : ApiResult<ReportResponse>.Failure(error);
+        }
+
         public async Task<ApiResult<ReportPhotoData>> GetReportPhotoAsync(string photoUrl, CancellationToken cancellationToken = default)
         {
             // The bearer token is attached to every request: only API-relative paths are allowed

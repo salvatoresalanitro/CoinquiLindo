@@ -17,6 +17,8 @@ namespace CoinquiLindo.Api.Tests
             { new RoomNameAlreadyExistsException("Cucina"), HttpStatusCode.Conflict, "House.RoomNameAlreadyExists" },
             { new SelfReportNotAllowedException(), HttpStatusCode.UnprocessableEntity, "Shift.SelfReportNotAllowed" },
             { new ReportPhotoTooLargeException(), HttpStatusCode.RequestEntityTooLarge, "Report.PhotoTooLarge" },
+            { new ReportVoteNotAllowedException(), HttpStatusCode.UnprocessableEntity, "ReportVote.NotAllowed" },
+            { new ReportVoteConflictException(), HttpStatusCode.Conflict, "ReportVote.Conflict" },
             { new UserAlreadyMemberException(), HttpStatusCode.Conflict, "House.UserAlreadyMember" },
             { new TenantAlreadyClaimedException(), HttpStatusCode.Conflict, "Tenant.AlreadyClaimed" },
             { new NotHouseMemberException(), HttpStatusCode.Forbidden, "House.AccessDenied" },

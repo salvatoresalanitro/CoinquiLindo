@@ -17,5 +17,7 @@ namespace CoinquiLindo.Shared.Contracts
         DateTime EndDate,
         bool IsShiftFullyCompleted,
         List<ShiftChecklistItemResponse> Checklist,
-        List<ReportResponse> Reports);
+        List<ReportResponse> Reports,
+        // False when the requester is the assignee (self-reports are not allowed)
+        bool CanReport);
 }

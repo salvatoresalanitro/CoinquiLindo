@@ -5,7 +5,7 @@
 <div class="mt-3 pt-2 border-top">
     <div class="d-flex justify-content-between align-items-center">
         <span class="small fw-semibold text-muted">Segnalazioni (@Reports.Count)</span>
-        @if (!isFormOpen)
+        @if (!isFormOpen && Shift.CanReport)
         {
             <button class="btn btn-outline-danger btn-sm" type="button" @onclick="OpenForm">Segnala</button>
         }
@@ -62,33 +62,58 @@
 
     @foreach (var report in Reports)
     {
-        <div class="report-item rounded-3 p-2 mt-2">
-            <div class="d-flex justify-content-between">
-                <span class="small fw-semibold">@report.ReporterName</span>
-                <span class="small text-muted">@report.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+        <div class="report-item rounded-3 p-2 mt-2 d-flex gap-2">
+            <div class="report-votes" aria-label="Voti della segnalazione">
+                <button type="button"
+                        class="report-vote-btn @(report.MyVote == ReportVoteValue.Up ? "is-up" : string.Empty)"
+                        aria-label="Sono d'accordo" aria-pressed="@(report.MyVote == ReportVoteValue.Up)"
+                        title="@(report.CanVote ? "Sono d'accordo" : CannotVoteHint)"
+                        disabled="@(!report.CanVote || votingReportId.HasValue)"
+                        @onclick="() => ToggleVote(report, ReportVoteValue.Up)">▲</button>
+                <span class="report-score @ScoreClass(report.Score)" title="@report.UpvoteCount su, @report.DownvoteCount giù">@report.Score</span>
+                <button type="button"
+                        class="report-vote-btn @(report.MyVote == ReportVoteValue.Down ? "is-down" : string.Empty)"
+                        aria-label="Non sono d'accordo" aria-pressed="@(report.MyVote == ReportVoteValue.Down)"
+                        title="@(report.CanVote ? "Non sono d'accordo" : CannotVoteHint)"
+                        disabled="@(!report.CanVote || votingReportId.HasValue)"
+                        @onclick="() => ToggleVote(report, ReportVoteValue.Down)">▼</button>
             </div>
-            <div class="small">@report.Description</div>
-            @if (loadedPhotos.TryGetValue(report.Id, out var loaded))
-            {
-                <img class="report-photo mt-2" src="@ToDataUrl(loaded)" alt="Foto della segnalazione" />
-            }
-            else
-            {
-                <button class="btn btn-link btn-sm p-0 mt-1" type="button" @onclick="() => LoadPhoto(report)" disabled="@(loadingPhotoId == report.Id)">
-                    @(loadingPhotoId == report.Id ? "Caricamento foto..." : "Vedi foto")
-                </button>
-            }
+            <div class="flex-grow-1 min-w-0">
+                <div class="d-flex justify-content-between">
+                    <span class="small fw-semibold">@report.ReporterName</span>
+                    <span class="small text-muted">@report.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+                <div class="small">@report.Description</div>
+                @if (loadedPhotos.TryGetValue(report.Id, out var loaded))
+                {
+                    <img class="report-photo mt-2" src="@ToDataUrl(loaded)" alt="Foto della segnalazione" />
+                }
+                else
+                {
+                    <button class="btn btn-link btn-sm p-0 mt-1" type="button" @onclick="() => LoadPhoto(report)" disabled="@(loadingPhotoId == report.Id)">
+                        @(loadingPhotoId == report.Id ? "Caricamento foto..." : "Vedi foto")
+                    </button>
+                }
+            </div>
         </div>
     }
 </div>
 
 @code {
+    private const string CannotVoteHint = "Chi ha segnalato e chi ha il turno non possono votare";
+
     [Parameter, EditorRequired] public Guid HouseId { get; set; }
     [Parameter, EditorRequired] public ShiftResponse Shift { get; set; } = default!;
-    [Parameter] public EventCallback OnReportCreated { get; set; }
+    [Parameter] public EventCallback OnReportsChanged { get; set; }
+
+    // Latest server state of reports voted locally, until the parent reloads the shift
+    private readonly Dictionary<Guid, ReportResponse> updatedReports = new();
+    private ShiftResponse? renderedShift;
+    private Guid? votingReportId;
 
     // Older payloads may omit the list
-    private IReadOnlyList<ReportResponse> Reports => Shift.Reports ?? [];
+    private IReadOnlyList<ReportResponse> Reports =>
+        (Shift.Reports ?? []).Select(report => updatedReports.GetValueOrDefault(report.Id, report)).ToList();
 
     private readonly Dictionary<Guid, ReportPhotoData> loadedPhotos = new();
     private Guid? loadingPhotoId;
@@ -100,6 +125,67 @@
     private ApiError? error;
 
     private bool CanSubmit => photo is not null && !string.IsNullOrWhiteSpace(description);
+
+    protected override void OnParametersSet()
+    {
+        // A reloaded shift carries fresh server state: local vote results are obsolete
+        if (!ReferenceEquals(renderedShift, Shift))
+        {
+            updatedReports.Clear();
+            renderedShift = Shift;
+        }
+    }
+
+    // Reddit-style: tapping the active arrow withdraws the vote, the other arrow switches it
+    private async Task ToggleVote(ReportResponse report, ReportVoteValue clicked)
+    {
+        if (!report.CanVote || votingReportId.HasValue)
+        {
+            return;
+        }
+
+        var newVote = report.MyVote == clicked ? (ReportVoteValue?)null : clicked;
+        votingReportId = report.Id;
+        error = null;
+        updatedReports[report.Id] = WithVote(report, newVote); // optimistic
+
+        var result = newVote is { } vote
+            ? await ApiClient.CastReportVoteAsync(HouseId, Shift.Id, report.Id, vote)
+            : await ApiClient.RemoveReportVoteAsync(HouseId, Shift.Id, report.Id);
+
+        if (result.IsSuccess)
+        {
+            updatedReports[report.Id] = result.Value!;
+        }
+        else
+        {
+            updatedReports[report.Id] = report;
+            error = result.Error;
+            if (result.Error.Status == 409)
+            {
+                await OnReportsChanged.InvokeAsync();
+            }
+        }
+
+        votingReportId = null;
+    }
+
+    private static ReportResponse WithVote(ReportResponse report, ReportVoteValue? vote)
+    {
+        int Count(ReportVoteValue value, int current) =>
+            current - (report.MyVote == value ? 1 : 0) + (vote == value ? 1 : 0);
+
+        var ups = Count(ReportVoteValue.Up, report.UpvoteCount);
+        var downs = Count(ReportVoteValue.Down, report.DownvoteCount);
+        return report with { UpvoteCount = ups, DownvoteCount = downs, Score = ups - downs, MyVote = vote };
+    }
+
+    private static string ScoreClass(int score) => score switch
+    {
+        > 0 => "is-up",
+        < 0 => "is-down",
+        _ => string.Empty
+    };
 
     private void OpenForm()
     {
@@ -191,7 +277,7 @@
         {
             loadedPhotos[result.Value!.Id] = photo;
             CloseForm();
-            await OnReportCreated.InvokeAsync();
+            await OnReportsChanged.InvokeAsync();
         }
         else
         {

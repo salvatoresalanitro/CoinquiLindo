@@ -59,6 +59,19 @@ namespace CoinquiLindo.Infrastructure
                 b.HasKey(r => r.Id);
                 b.Property(r => r.PhotoKey).HasMaxLength(64).IsRequired();
                 b.ToTable(t => t.HasCheckConstraint("CK_Reports_PhotoKey_NotBlank", "length(trim(\"PhotoKey\")) > 0"));
+
+                b.HasMany(r => r.Votes).WithOne().HasForeignKey("ReportId").IsRequired().OnDelete(DeleteBehavior.Cascade);
+                b.Metadata.FindNavigation(nameof(Report.Votes))!
+                    .SetPropertyAccessMode(PropertyAccessMode.Field);
+            });
+
+            // One vote per tenant per report, enforced by the database against concurrent requests
+            modelBuilder.Entity<ReportVote>(b =>
+            {
+                b.HasKey(v => v.Id);
+                b.HasOne<Tenant>().WithMany().HasForeignKey(v => v.VoterTenantId).OnDelete(DeleteBehavior.Restrict);
+                b.HasIndex("ReportId", nameof(ReportVote.VoterTenantId)).IsUnique();
+                b.ToTable("ReportVotes", t => t.HasCheckConstraint("CK_ReportVotes_Type", "\"Type\" IN (-1, 1)"));
             });
 
             // Mapping for User aggregate (account linked to Google)

@@ -41,7 +41,45 @@ namespace CoinquiLindo.Api.Endpoints
             group.MapGet("/{reportId:guid}/photo", GetReportPhoto)
                 .Produces(StatusCodes.Status200OK, responseType: typeof(Stream), contentType: "image/jpeg", "image/png");
 
+            // PUT is idempotent (sets the vote); DELETE removes it. Toggling is a client concern
+            group.MapPut("/{reportId:guid}/vote", CastVote)
+                .Produces<ReportResponse>()
+                .ProducesProblem(StatusCodes.Status400BadRequest)
+                .ProducesProblem(StatusCodes.Status409Conflict)
+                .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+            group.MapDelete("/{reportId:guid}/vote", RemoveVote)
+                .Produces<ReportResponse>()
+                .ProducesProblem(StatusCodes.Status409Conflict);
+
             return app;
+        }
+
+        private static async Task<IResult> CastVote(
+            Guid houseId,
+            Guid shiftId,
+            Guid reportId,
+            CastReportVoteRequest request,
+            ClaimsPrincipal user,
+            IMessageBus bus,
+            CancellationToken ct)
+        {
+            var report = await bus.InvokeAsync<ReportResponse>(
+                new CastReportVoteCommand(houseId, shiftId, reportId, request.Vote, user.GetUserId()), ct);
+            return Results.Ok(report);
+        }
+
+        private static async Task<IResult> RemoveVote(
+            Guid houseId,
+            Guid shiftId,
+            Guid reportId,
+            ClaimsPrincipal user,
+            IMessageBus bus,
+            CancellationToken ct)
+        {
+            var report = await bus.InvokeAsync<ReportResponse>(
+                new RemoveReportVoteCommand(houseId, shiftId, reportId, user.GetUserId()), ct);
+            return Results.Ok(report);
         }
 
         private static async Task<IResult> CreateReport(
