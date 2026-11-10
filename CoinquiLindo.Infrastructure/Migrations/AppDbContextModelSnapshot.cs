@@ -102,7 +102,9 @@ namespace CoinquiLindo.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("PhotoUrl")
+                    b.Property<string>("PhotoKey")
+                        .IsRequired()
+                        .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("ReporterId")
@@ -117,7 +119,10 @@ namespace CoinquiLindo.Infrastructure.Migrations
 
                     b.HasIndex("ShiftId");
 
-                    b.ToTable("Reports");
+                    b.ToTable("Reports", t =>
+                        {
+                            t.HasCheckConstraint("CK_Reports_PhotoKey_NotBlank", "length(trim(\"PhotoKey\")) > 0");
+                        });
                 });
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Room", b =>

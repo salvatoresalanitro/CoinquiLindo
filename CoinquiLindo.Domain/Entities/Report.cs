@@ -1,4 +1,4 @@
-﻿using CoinquiLindo.Domain.Exceptions;
+using CoinquiLindo.Domain.Exceptions;
 
 namespace CoinquiLindo.Domain.Entities
 {
@@ -7,10 +7,11 @@ namespace CoinquiLindo.Domain.Entities
         public Guid Id { get; private set; }
         public Tenant Reporter { get; private set; }
         public string Description { get; private set; }
-        public string? PhotoUrl { get; private set; }
+        // Opaque storage key of the uploaded photo (never a client-supplied URL)
+        public string PhotoKey { get; private set; }
         public DateTime CreatedAt { get; private set; }
 
-        public Report(Tenant reporter, string description, string? photoUrl = null)
+        public Report(Tenant reporter, string description, string photoKey)
         {
             ArgumentNullException.ThrowIfNull(reporter, nameof(reporter));
 
@@ -19,10 +20,15 @@ namespace CoinquiLindo.Domain.Entities
                 throw new DomainValidationException("Report.DescriptionRequired", "Report description cannot be empty.");
             }
 
+            if (string.IsNullOrWhiteSpace(photoKey))
+            {
+                throw new DomainValidationException("Report.PhotoRequired", "A report requires a photo.");
+            }
+
             Id = Guid.NewGuid();
             Reporter = reporter;
             Description = description;
-            PhotoUrl = photoUrl;
+            PhotoKey = photoKey;
             CreatedAt = DateTime.UtcNow;
         }
 

@@ -1,7 +1,9 @@
 using CoinquiLindo.Application.Auth;
+using CoinquiLindo.Application.Reports;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 using CoinquiLindo.Infrastructure.Auth;
 using CoinquiLindo.Infrastructure.Repositories;
+using CoinquiLindo.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -20,6 +22,9 @@ namespace CoinquiLindo.Infrastructure
             services.AddScoped<IHouseRepository, HouseRepository>();
             services.AddScoped<IShiftRepository, ShiftRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
+
+            // ReportPhotoStorageOptions are bound by the host (Api) from configuration
+            services.AddSingleton<IReportPhotoStorage, FileSystemReportPhotoStorage>();
 
             // JwtOptions are bound by the host (Api) from configuration
             services.TryAddSingleton(TimeProvider.System);

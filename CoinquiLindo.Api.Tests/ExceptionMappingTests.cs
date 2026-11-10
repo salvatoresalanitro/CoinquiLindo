@@ -16,6 +16,7 @@ namespace CoinquiLindo.Api.Tests
             { new NotFoundException("House", Guid.NewGuid()), HttpStatusCode.NotFound, "House.NotFound" },
             { new RoomNameAlreadyExistsException("Cucina"), HttpStatusCode.Conflict, "House.RoomNameAlreadyExists" },
             { new SelfReportNotAllowedException(), HttpStatusCode.UnprocessableEntity, "Shift.SelfReportNotAllowed" },
+            { new ReportPhotoTooLargeException(), HttpStatusCode.RequestEntityTooLarge, "Report.PhotoTooLarge" },
             { new UserAlreadyMemberException(), HttpStatusCode.Conflict, "House.UserAlreadyMember" },
             { new TenantAlreadyClaimedException(), HttpStatusCode.Conflict, "Tenant.AlreadyClaimed" },
             { new NotHouseMemberException(), HttpStatusCode.Forbidden, "House.AccessDenied" },

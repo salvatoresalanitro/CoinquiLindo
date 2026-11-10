@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using CoinquiLindo.Shared.Contracts;
@@ -97,6 +98,64 @@ namespace CoinquiLindo.Client
             return error is null ? ApiResult.Success() : ApiResult.Failure(error);
         }
 
+        public async Task<ApiResult<ReportResponse>> CreateShiftReportAsync(
+            Guid houseId,
+            Guid shiftId,
+            string description,
+            byte[] photo,
+            string photoContentType,
+            CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<ReportResponse>(
+                async ct =>
+                {
+                    using var form = new MultipartFormDataContent();
+                    form.Add(new StringContent(description), ReportForm.DescriptionField);
+                    var photoContent = new ByteArrayContent(photo);
+                    photoContent.Headers.ContentType = new MediaTypeHeaderValue(photoContentType);
+                    // The server ignores the name and detects the format from the bytes
+                    form.Add(photoContent, ReportForm.PhotoField, "camera-photo");
+                    return await httpClient.PostAsync($"/api/houses/{houseId}/shifts/{shiftId}/reports", form, ct);
+                },
+                readBody: true,
+                cancellationToken);
+
+            return error is null ? ApiResult<ReportResponse>.Success(value!) : ApiResult<ReportResponse>.Failure(error);
+        }
+
+        public async Task<ApiResult<List<ReportResponse>>> GetShiftReportsAsync(
+            Guid houseId,
+            Guid shiftId,
+            CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<List<ReportResponse>>(
+                ct => httpClient.GetAsync($"/api/houses/{houseId}/shifts/{shiftId}/reports", ct),
+                readBody: true,
+                cancellationToken);
+
+            return error is null ? ApiResult<List<ReportResponse>>.Success(value!) : ApiResult<List<ReportResponse>>.Failure(error);
+        }
+
+        public async Task<ApiResult<ReportPhotoData>> GetReportPhotoAsync(string photoUrl, CancellationToken cancellationToken = default)
+        {
+            // The bearer token is attached to every request: only API-relative paths are allowed
+            if (!photoUrl.StartsWith("/api/", StringComparison.Ordinal)
+                || !Uri.TryCreate(photoUrl, UriKind.Relative, out var relativeUri))
+            {
+                logger.LogWarning("Refused to download a report photo outside the API: {PhotoUrl}", photoUrl);
+                return ApiResult<ReportPhotoData>.Failure(new ApiError(null, null, ErrorMessageProvider.DefaultMessage, null));
+            }
+
+            var (value, error) = await SendAsync<ReportPhotoData>(
+                ct => httpClient.GetAsync(relativeUri, ct),
+                async (content, ct) => new ReportPhotoData(
+                    await content.ReadAsByteArrayAsync(ct),
+                    content.Headers.ContentType?.MediaType ?? "application/octet-stream"),
+                cancellationToken);
+
+            return error is null ? ApiResult<ReportPhotoData>.Success(value!) : ApiResult<ReportPhotoData>.Failure(error);
+        }
+
         public async Task<ApiResult<MeResponse>> GetMeAsync(CancellationToken cancellationToken = default)
         {
             var (value, error) = await SendAsync<MeResponse>(
@@ -121,8 +180,14 @@ namespace CoinquiLindo.Client
             return error is null ? ApiResult.Success() : ApiResult.Failure(error);
         }
 
+        private Task<(T? Value, ApiError? Error)> SendAsync<T>(
+            Func<CancellationToken, Task<HttpResponseMessage>> send, bool readBody, CancellationToken cancellationToken) =>
+            SendAsync<T>(send, readBody ? (content, ct) => content.ReadFromJsonAsync<T>(ct) : null, cancellationToken);
+
         private async Task<(T? Value, ApiError? Error)> SendAsync<T>(
-            Func<CancellationToken, Task<HttpResponseMessage>> send, bool readBody, CancellationToken cancellationToken)
+            Func<CancellationToken, Task<HttpResponseMessage>> send,
+            Func<HttpContent, CancellationToken, Task<T?>>? read,
+            CancellationToken cancellationToken)
         {
             try
             {
@@ -133,12 +198,12 @@ namespace CoinquiLindo.Client
                     return (default, await ReadErrorAsync(response, cancellationToken));
                 }
 
-                if (!readBody)
+                if (read is null)
                 {
                     return (default, null);
                 }
 
-                var value = await response.Content.ReadFromJsonAsync<T>(cancellationToken);
+                var value = await read(response.Content, cancellationToken);
                 return value is null ? (default, UnreadableResponse((int)response.StatusCode)) : (value, null);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

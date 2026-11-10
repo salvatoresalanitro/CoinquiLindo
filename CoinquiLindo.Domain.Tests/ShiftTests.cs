@@ -56,7 +56,7 @@ namespace CoinquiLindo.Domain.Tests
             var tenant = new Tenant("Lucia");
             var reporter = new Tenant("Salvo");
             var shift = new Shift(Guid.NewGuid(), tenant, room, DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
-            var report = new Report(reporter, "Manca la carta igienica", null);
+            var report = new Report(reporter, "Manca la carta igienica", "reports/photo.jpg");
 
             // Act
             shift.AddReport(report);
@@ -72,7 +72,7 @@ namespace CoinquiLindo.Domain.Tests
             // Arrange
             var tenant = new Tenant("Lucia");
             var shift = new Shift(Guid.NewGuid(), tenant, new Room("Bagno"), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
-            var report = new Report(tenant, "Auto-segnalazione");
+            var report = new Report(tenant, "Auto-segnalazione", "reports/photo.jpg");
 
             // Act
             var action = () => shift.AddReport(report);

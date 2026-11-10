@@ -1,0 +1,28 @@
+.report-form {
+    background: #fff7f7;
+    border-color: #f5c2c7 !important;
+}
+
+.report-item {
+    background: #f8f9fa;
+}
+
+.report-photo-preview {
+    position: relative;
+}
+
+.report-photo-preview img,
+.report-photo {
+    display: block;
+    width: 100%;
+    max-height: 16rem;
+    object-fit: cover;
+    border-radius: 0.75rem;
+}
+
+.report-photo-retake {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}

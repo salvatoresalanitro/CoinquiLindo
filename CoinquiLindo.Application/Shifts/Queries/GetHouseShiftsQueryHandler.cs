@@ -1,3 +1,4 @@
+using CoinquiLindo.Application.Reports;
 using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
@@ -35,7 +36,8 @@ namespace CoinquiLindo.Application.Shifts.Queries
                         item.Description,
                         item.IsCompleted,
                         item.CompletedAt))
-                    .ToList()))
+                    .ToList(),
+                shift.ToReportResponses()))
                 .ToList();
         }
     }

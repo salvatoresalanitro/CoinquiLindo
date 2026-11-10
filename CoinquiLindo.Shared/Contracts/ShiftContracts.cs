@@ -16,5 +16,6 @@ namespace CoinquiLindo.Shared.Contracts
         DateTime StartDate,
         DateTime EndDate,
         bool IsShiftFullyCompleted,
-        List<ShiftChecklistItemResponse> Checklist);
+        List<ShiftChecklistItemResponse> Checklist,
+        List<ReportResponse> Reports);
 }

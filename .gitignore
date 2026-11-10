@@ -426,3 +426,5 @@ FodyWeavers.xsd
 
 #Github agents
 .github
+# Private report photos (ADR-014): user data, never committed
+**/App_Data/report-photos/

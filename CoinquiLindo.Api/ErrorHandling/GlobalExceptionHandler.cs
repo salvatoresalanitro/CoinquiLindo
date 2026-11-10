@@ -19,6 +19,7 @@ namespace CoinquiLindo.Api.ErrorHandling
                 BusinessRuleViolationException e => (StatusCodes.Status422UnprocessableEntity, "Business rule violated", e.Code, e.Message),
                 AuthenticationFailedException e => (StatusCodes.Status401Unauthorized, "Unauthorized", e.Code, e.Message),
                 AccessDeniedException e => (StatusCodes.Status403Forbidden, "Forbidden", e.Code, e.Message),
+                PayloadTooLargeException e => (StatusCodes.Status413PayloadTooLarge, "Payload too large", e.Code, e.Message),
                 DomainException e => (StatusCodes.Status400BadRequest, "Domain error", e.Code, e.Message),
                 BadHttpRequestException e => (e.StatusCode, "Bad request", "General.BadRequest", "The request is malformed or contains invalid values."),
                 // Never expose internal messages for unexpected failures

@@ -52,7 +52,7 @@ namespace CoinquiLindo.Domain.Tests
         [MemberData(nameof(BlankValues))]
         public void Report_Should_ThrowValidation_When_DescriptionIsBlank(string? description)
         {
-            var action = () => new Report(new Tenant("Salvo"), description!);
+            var action = () => new Report(new Tenant("Salvo"), description!, "reports/photo.jpg");
 
             action.Should().Throw<DomainValidationException>()
                 .Which.Code.Should().Be("Report.DescriptionRequired");

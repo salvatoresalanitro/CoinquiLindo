@@ -58,5 +58,7 @@
             <string>Viewer</string>
         </dict>
     </array>
+    <key>NSCameraUsageDescription</key>
+    <string>CoinquiLindo usa la fotocamera per allegare una foto alle segnalazioni dei turni.</string>
 </dict>
 </plist>

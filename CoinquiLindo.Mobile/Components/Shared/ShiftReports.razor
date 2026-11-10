@@ -1,0 +1,235 @@
+@using Microsoft.Extensions.Logging
+@inject CoinquiLindoApiClient ApiClient
+@inject ILogger<ShiftReports> Logger
+
+<div class="mt-3 pt-2 border-top">
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="small fw-semibold text-muted">Segnalazioni (@Reports.Count)</span>
+        @if (!isFormOpen)
+        {
+            <button class="btn btn-outline-danger btn-sm" type="button" @onclick="OpenForm">Segnala</button>
+        }
+    </div>
+
+    <ErrorAlert Error="error" OnDismiss="() => error = null" />
+
+    @if (isFormOpen)
+    {
+        <div class="report-form border rounded-3 p-3 mt-2">
+            @if (photo is null)
+            {
+                <button class="btn btn-dark w-100 py-3" type="button" @onclick="CapturePhoto" disabled="@isCapturing">
+                    @if (isCapturing)
+                    {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    }
+                    else
+                    {
+                        <span>📷 Scatta foto</span>
+                    }
+                </button>
+                <small class="text-muted d-block mt-1">La foto è obbligatoria.</small>
+            }
+            else
+            {
+                <div class="report-photo-preview mb-2">
+                    <img src="@ToDataUrl(photo)" alt="Anteprima della foto" />
+                    <button class="btn btn-light btn-sm report-photo-retake" type="button" @onclick="CapturePhoto" disabled="@(isCapturing || isSubmitting)">
+                        Rifai
+                    </button>
+                </div>
+            }
+
+            <label class="form-label mt-2" for="report-description-@Shift.Id">Descrizione</label>
+            <textarea id="report-description-@Shift.Id" class="form-control" rows="2"
+                      placeholder="Cosa non è stato fatto bene?" @bind="description" @bind:event="oninput"></textarea>
+
+            <div class="d-flex gap-2 mt-3">
+                <button class="btn btn-outline-secondary flex-fill" type="button" @onclick="CloseForm" disabled="@isSubmitting">Annulla</button>
+                <button class="btn btn-danger flex-fill" type="button" @onclick="Submit" disabled="@(!CanSubmit || isSubmitting)">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    }
+                    else
+                    {
+                        <span>Invia segnalazione</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
+
+    @foreach (var report in Reports)
+    {
+        <div class="report-item rounded-3 p-2 mt-2">
+            <div class="d-flex justify-content-between">
+                <span class="small fw-semibold">@report.ReporterName</span>
+                <span class="small text-muted">@report.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="small">@report.Description</div>
+            @if (loadedPhotos.TryGetValue(report.Id, out var loaded))
+            {
+                <img class="report-photo mt-2" src="@ToDataUrl(loaded)" alt="Foto della segnalazione" />
+            }
+            else
+            {
+                <button class="btn btn-link btn-sm p-0 mt-1" type="button" @onclick="() => LoadPhoto(report)" disabled="@(loadingPhotoId == report.Id)">
+                    @(loadingPhotoId == report.Id ? "Caricamento foto..." : "Vedi foto")
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Guid HouseId { get; set; }
+    [Parameter, EditorRequired] public ShiftResponse Shift { get; set; } = default!;
+    [Parameter] public EventCallback OnReportCreated { get; set; }
+
+    // Older payloads may omit the list
+    private IReadOnlyList<ReportResponse> Reports => Shift.Reports ?? [];
+
+    private readonly Dictionary<Guid, ReportPhotoData> loadedPhotos = new();
+    private Guid? loadingPhotoId;
+    private bool isFormOpen;
+    private bool isCapturing;
+    private bool isSubmitting;
+    private string description = string.Empty;
+    private ReportPhotoData? photo;
+    private ApiError? error;
+
+    private bool CanSubmit => photo is not null && !string.IsNullOrWhiteSpace(description);
+
+    private void OpenForm()
+    {
+        isFormOpen = true;
+        error = null;
+    }
+
+    private void CloseForm()
+    {
+        isFormOpen = false;
+        description = string.Empty;
+        photo = null;
+    }
+
+    private async Task CapturePhoto()
+    {
+        error = null;
+
+        if (!MediaPicker.Default.IsCaptureSupported)
+        {
+            error = LocalError("La fotocamera non è disponibile su questo dispositivo.");
+            return;
+        }
+
+        isCapturing = true;
+        try
+        {
+            if (await Permissions.RequestAsync<Permissions.Camera>() != PermissionStatus.Granted)
+            {
+                error = LocalError("Consenti l'accesso alla fotocamera per allegare la foto.");
+                return;
+            }
+
+            var file = await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
+            {
+                Title = "Foto della segnalazione",
+                MaximumWidth = 1920,
+                MaximumHeight = 1920,
+                CompressionQuality = 80
+            });
+
+            if (file is null)
+            {
+                return; // capture cancelled
+            }
+
+            await using var stream = await file.OpenReadAsync();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+
+            if (buffer.Length > ReportForm.MaxPhotoBytes)
+            {
+                error = LocalError(ErrorMessageProvider.GetMessage("Report.PhotoTooLarge", 413));
+                return;
+            }
+
+            var bytes = buffer.ToArray();
+            photo = new ReportPhotoData(bytes, DetectContentType(bytes));
+        }
+        catch (PermissionException ex)
+        {
+            Logger.LogWarning(ex, "Camera permission missing");
+            error = LocalError("Consenti l'accesso alla fotocamera per allegare la foto.");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Photo capture failed");
+            error = LocalError("Impossibile scattare la foto. Riprova.");
+        }
+        finally
+        {
+            isCapturing = false;
+        }
+    }
+
+    private async Task Submit()
+    {
+        if (!CanSubmit || isSubmitting)
+        {
+            return;
+        }
+
+        isSubmitting = true;
+        error = null;
+
+        var result = await ApiClient.CreateShiftReportAsync(HouseId, Shift.Id, description.Trim(), photo!.Content, photo.ContentType);
+
+        if (result.IsSuccess)
+        {
+            loadedPhotos[result.Value!.Id] = photo;
+            CloseForm();
+            await OnReportCreated.InvokeAsync();
+        }
+        else
+        {
+            error = result.Error;
+        }
+
+        isSubmitting = false;
+    }
+
+    private async Task LoadPhoto(ReportResponse report)
+    {
+        loadingPhotoId = report.Id;
+        error = null;
+
+        var result = await ApiClient.GetReportPhotoAsync(report.PhotoUrl);
+
+        if (result.IsSuccess)
+        {
+            loadedPhotos[report.Id] = result.Value!;
+        }
+        else
+        {
+            error = result.Error;
+        }
+
+        loadingPhotoId = null;
+    }
+
+    // <img> cannot send the bearer token: photos are downloaded by the authenticated client and inlined
+    private static string ToDataUrl(ReportPhotoData data) =>
+        $"data:{data.ContentType};base64,{Convert.ToBase64String(data.Content)}";
+
+    // Hint only: the server detects the real format from the bytes
+    private static string DetectContentType(byte[] bytes) =>
+        bytes.Length >= 4 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47
+            ? "image/png"
+            : "image/jpeg";
+
+    // Status 400: device-side, user-correctable problem (warning style, not a server failure)
+    private static ApiError LocalError(string message) => new(400, null, message, null);
+}

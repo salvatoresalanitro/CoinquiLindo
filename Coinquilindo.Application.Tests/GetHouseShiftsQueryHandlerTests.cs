@@ -40,6 +40,32 @@ namespace Coinquilindo.Application.Tests
             });
             result.Single().Checklist.Should().ContainSingle(item =>
                 item.Description == "Lavare il pavimento" && !item.IsCompleted && item.CompletedAt == null);
+            result.Single().Reports.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Handle_Should_IncludeShiftReports_ForHistory()
+        {
+            var (house, member) = TestData.HouseWithMember("Casa");
+            var assignee = TestData.NewUser("Lucia");
+            house.AddMember(assignee);
+            var room = new Room("Bagno");
+            house.AddRoom(room);
+            var shift = new Shift(house.Id, house.Tenants.Single(t => t.UserId == assignee.Id), room,
+                DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+            var report = new Report(house.Tenants.Single(t => t.UserId == member.Id), "Pavimento sporco",
+                "0f8fad5bd9cb469fa165708167e1f3e1.png");
+            shift.AddReport(report);
+            _houseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
+            _shiftRepository.GetByHouseIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(new[] { shift });
+            var handler = new GetHouseShiftsQueryHandler(_houseRepository, _shiftRepository);
+
+            var result = await handler.Handle(new GetHouseShiftsQuery(house.Id, member.Id), CancellationToken.None);
+
+            result.Single().Reports.Should().ContainSingle(response =>
+                response.Id == report.Id &&
+                response.ReporterName == report.Reporter.Name &&
+                response.PhotoUrl == $"/api/houses/{house.Id}/shifts/{shift.Id}/reports/{report.Id}/photo");
         }
 
         [Fact]

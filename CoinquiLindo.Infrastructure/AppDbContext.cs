@@ -53,6 +53,14 @@ namespace CoinquiLindo.Infrastructure
                     .SetPropertyAccessMode(PropertyAccessMode.Field);
             });
 
+            // Report photo is mandatory: NOT NULL plus a CHECK so blank keys are rejected by the database too
+            modelBuilder.Entity<Report>(b =>
+            {
+                b.HasKey(r => r.Id);
+                b.Property(r => r.PhotoKey).HasMaxLength(64).IsRequired();
+                b.ToTable(t => t.HasCheckConstraint("CK_Reports_PhotoKey_NotBlank", "length(trim(\"PhotoKey\")) > 0"));
+            });
+
             // Mapping for User aggregate (account linked to Google)
             modelBuilder.Entity<User>(b =>
             {

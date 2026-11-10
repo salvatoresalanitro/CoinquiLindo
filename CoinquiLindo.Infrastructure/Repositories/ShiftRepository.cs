@@ -19,13 +19,18 @@ namespace CoinquiLindo.Infrastructure.Repositories
                 .Include(shift => shift.AssignedTenant)
                 .Include(shift => shift.AssignedRoom)
                 .Include(shift => shift.Checklist)
+                .Include(shift => shift.Reports).ThenInclude(report => report.Reporter)
+                .AsSplitQuery()
                 .OrderByDescending(shift => shift.StartDate)
                 .ThenBy(shift => shift.Id)
                 .ToListAsync(cancellationToken);
 
         public Task<Shift?> GetByIdAsync(Guid houseId, Guid shiftId, CancellationToken cancellationToken = default) =>
             dbContext.Shifts
+                .Include(shift => shift.AssignedTenant)
                 .Include(shift => shift.Checklist)
+                .Include(shift => shift.Reports).ThenInclude(report => report.Reporter)
+                .AsSplitQuery()
                 .FirstOrDefaultAsync(shift => shift.HouseId == houseId && shift.Id == shiftId, cancellationToken);
 
         public Task UpdateAsync(Shift shift, CancellationToken cancellationToken = default) =>
