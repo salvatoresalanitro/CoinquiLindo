@@ -442,3 +442,6 @@ FodyWeavers.xsd
 *firebase-adminsdk*.json
 # APNs auth keys (iOS push, phase 5c-3)
 *.p8
+# AI Context & Project Bible
+/docs/
+/CLAUDE.md
