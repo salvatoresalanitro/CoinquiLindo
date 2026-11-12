@@ -15,7 +15,7 @@ namespace CoinquiLindo.Api.Tests
             var create = await client.PostAsJsonAsync("/api/houses", new CreateHouseRequest("Casa"));
             var get = await client.GetAsync($"/api/houses/{Guid.NewGuid()}");
             var shift = await client.PostAsJsonAsync($"/api/houses/{Guid.NewGuid()}/shifts",
-                new AssignShiftRequest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow, DateTime.UtcNow.AddDays(7)));
+                new AssignShiftRequest(Guid.NewGuid(), Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow).AddDays(7)));
 
             (await create.ReadProblemAsync(HttpStatusCode.Unauthorized)).ErrorCode.Should().Be("Auth.Unauthorized");
             (await get.ReadProblemAsync(HttpStatusCode.Unauthorized)).ErrorCode.Should().Be("Auth.Unauthorized");

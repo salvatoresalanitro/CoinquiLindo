@@ -8,6 +8,8 @@ namespace CoinquiLindo.Domain.Entities
         // No 0/O, 1/I/L: codes are read aloud and typed by hand
         private const string InviteCodeAlphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
         public const int InviteCodeLength = 8;
+        public const string DefaultTimeZoneId = "Europe/Rome";
+        public const int MaxTimeZoneIdLength = 64;
 
         public Guid Id { get; private set; }
         public string Name { get; private set; }
@@ -23,7 +25,10 @@ namespace CoinquiLindo.Domain.Entities
         public IReadOnlyCollection<Tenant> Tenants => _tenants.AsReadOnly();
         public IReadOnlyCollection<Room> Rooms => _rooms.AsReadOnly();
 
-        public House(string name)
+        // IANA id: shift days and deadlines are interpreted in the time zone where the house is
+        public string TimeZoneId { get; private set; }
+
+        public House(string name, string? timeZoneId = null)
         {
             if(string.IsNullOrWhiteSpace(name))
             {
@@ -33,6 +38,33 @@ namespace CoinquiLindo.Domain.Entities
             Id = Guid.NewGuid();
             Name = name;
             InviteCode = GenerateInviteCode();
+            TimeZoneId = NormalizeTimeZoneId(timeZoneId);
+        }
+
+        public TimeZoneInfo GetTimeZone() => TimeZoneInfo.FindSystemTimeZoneById(TimeZoneId);
+
+        // Blank -> default. Windows ids are stored as IANA so the value resolves on every server OS
+        private static string NormalizeTimeZoneId(string? timeZoneId)
+        {
+            if (string.IsNullOrWhiteSpace(timeZoneId))
+            {
+                return DefaultTimeZoneId;
+            }
+
+            var id = timeZoneId.Trim();
+            if (id.Length > MaxTimeZoneIdLength || !TimeZoneInfo.TryFindSystemTimeZoneById(id, out var timeZone))
+            {
+                throw new DomainValidationException("House.TimeZoneInvalid", "The time zone of the house is not valid.");
+            }
+
+            if (timeZone.HasIanaId)
+            {
+                return id;
+            }
+
+            return TimeZoneInfo.TryConvertWindowsIdToIanaId(id, out var ianaId)
+                ? ianaId
+                : throw new DomainValidationException("House.TimeZoneInvalid", "The time zone of the house is not valid.");
         }
 
         public string RegenerateInviteCode()

@@ -1,4 +1,4 @@
 ﻿namespace CoinquiLindo.Application.Houses.Commands
 {
-    public record CreateHouseCommand(string Name, Guid RequesterUserId);
+    public record CreateHouseCommand(string Name, string? TimeZoneId, Guid RequesterUserId);
 }

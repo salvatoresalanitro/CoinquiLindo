@@ -28,7 +28,7 @@ namespace Coinquilindo.Application.Tests
             var user = new User("google-sub-1", "salvo@gmail.com", "Salvo");
             _mockUserRepository.GetByIdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(user);
 
-            var command = new CreateHouseCommand(Name: "Casa studenti", RequesterUserId: user.Id);
+            var command = new CreateHouseCommand(Name: "Casa studenti", TimeZoneId: "Europe/Lisbon", RequesterUserId: user.Id);
 
             //Act
             var resultId = await _handler.Handle(command, CancellationToken.None);
@@ -39,6 +39,7 @@ namespace Coinquilindo.Application.Tests
             await _mockHouseRepository.Received(1).AddAsync(
                 Arg.Is<House>(h => h.Id == resultId
                     && h.Name == "Casa studenti"
+                    && h.TimeZoneId == "Europe/Lisbon"
                     && h.Tenants.Count == 1
                     && h.Tenants.First().UserId == user.Id
                     && h.Tenants.First().Name == "Salvo"),
@@ -50,7 +51,7 @@ namespace Coinquilindo.Application.Tests
         public async Task Handle_Should_ThrowNotFound_WhenRequesterDoesNotExist()
         {
             //Arrange
-            var command = new CreateHouseCommand(Name: "Casa studenti", RequesterUserId: Guid.NewGuid());
+            var command = new CreateHouseCommand(Name: "Casa studenti", TimeZoneId: null, RequesterUserId: Guid.NewGuid());
             _mockUserRepository.GetByIdAsync(command.RequesterUserId, Arg.Any<CancellationToken>()).ReturnsNull();
 
             //Act

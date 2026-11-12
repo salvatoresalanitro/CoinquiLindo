@@ -87,7 +87,7 @@ namespace CoinquiLindo.Infrastructure.Tests
                 await context.Database.MigrateAsync(previousMigration);
             }
 
-            var seed = await SeedShiftAsync();
+            var seed = await SeedLegacyShiftAsync();
             await using (var context = CreateContext())
             {
                 await context.Database.ExecuteSqlInterpolatedAsync($"""
@@ -125,18 +125,39 @@ namespace CoinquiLindo.Infrastructure.Tests
             house.AddTenant(assignee);
             house.AddTenant(reporter);
             house.AddRoom(room);
-            var shiftId = Guid.NewGuid();
+
+            await using (var context = CreateContext())
+            {
+                await new HouseRepository(context).AddAsync(house);
+            }
+
+            await using (var context = CreateContext())
+            {
+                var shift = new Shift(house.Id,
+                    await context.Tenants.SingleAsync(tenant => tenant.Id == assignee.Id),
+                    await context.Rooms.SingleAsync(r => r.Id == room.Id),
+                    new DateOnly(2026, 11, 2), new DateOnly(2026, 11, 8), house.GetTimeZone());
+                await new ShiftRepository(context).AddAsync(shift);
+
+                return (house.Id, shift.Id, assignee.Id, reporter.Id);
+            }
+        }
+
+        // Raw SQL: the current EF model cannot insert into the older schemas used by migration tests
+        private async Task<(Guid HouseId, Guid ShiftId, Guid AssigneeId, Guid ReporterId)> SeedLegacyShiftAsync()
+        {
+            var (houseId, roomId, assigneeId, reporterId, shiftId) =
+                (Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
             var now = DateTime.UtcNow;
 
             await using var context = CreateContext();
-            await new HouseRepository(context).AddAsync(house);
-            // Raw SQL keeps the seed valid against older schemas used by migration tests
+            await LegacySchemaSeed.InsertHouseAsync(context, houseId, roomId, assigneeId, reporterId);
             await context.Database.ExecuteSqlInterpolatedAsync($"""
                 INSERT INTO "Shifts" ("Id", "HouseId", "AssignedRoomId", "AssignedTenantId", "StartDate", "EndDate")
-                VALUES ({shiftId}, {house.Id}, {room.Id}, {assignee.Id}, {now}, {now.AddDays(7)});
+                VALUES ({shiftId}, {houseId}, {roomId}, {assigneeId}, {now}, {now.AddDays(7)});
                 """);
 
-            return (house.Id, shiftId, assignee.Id, reporter.Id);
+            return (houseId, shiftId, assigneeId, reporterId);
         }
 
         private AppDbContext CreateContext() => new(_options);

@@ -126,7 +126,7 @@ namespace CoinquiLindo.Infrastructure.Tests
         }
 
         [Fact]
-        public async Task GetEndingBetween_Should_ReturnShiftsEndingInWindow_WithAssigneeRoomAndChecklist()
+        public async Task GetDueBetween_Should_ReturnShiftsDueInWindow_WithAssigneeRoomAndChecklist()
         {
             var house = new House("Casa");
             var assignee = new Tenant("Assegnatario");
@@ -145,9 +145,12 @@ namespace CoinquiLindo.Infrastructure.Tests
             {
                 var tenant = await context.Tenants.SingleAsync(t => t.Id == assignee.Id);
                 var storedRoom = await context.Rooms.Include(r => r.CleaningTasks).SingleAsync(r => r.Id == room.Id);
-                var atLowerBound = new Shift(house.Id, tenant, storedRoom, Now.AddDays(-7), Now);
-                var inside = new Shift(house.Id, tenant, storedRoom, Now.AddDays(-7), Now.AddHours(24));
-                var after = new Shift(house.Id, tenant, storedRoom, Now.AddDays(-7), Now.AddHours(25));
+                // House in Europe/Rome (CET): each shift is due at 23:00 UTC of its last day
+                var start = new DateOnly(2026, 11, 3);
+                var timeZone = house.GetTimeZone();
+                var atLowerBound = new Shift(house.Id, tenant, storedRoom, start, new DateOnly(2026, 11, 9), timeZone);
+                var inside = new Shift(house.Id, tenant, storedRoom, start, new DateOnly(2026, 11, 10), timeZone);
+                var after = new Shift(house.Id, tenant, storedRoom, start, new DateOnly(2026, 11, 11), timeZone);
                 var repository = new ShiftRepository(context);
                 await repository.AddAsync(atLowerBound);
                 await repository.AddAsync(inside);
@@ -157,9 +160,11 @@ namespace CoinquiLindo.Infrastructure.Tests
 
             await using (var context = CreateContext())
             {
-                var shift = (await new ShiftRepository(context).GetEndingBetweenAsync(Now, Now.AddHours(24)))
+                var from = new DateTime(2026, 11, 9, 23, 0, 0, DateTimeKind.Utc);
+                var shift = (await new ShiftRepository(context).GetDueBetweenAsync(from, from.AddHours(24)))
                     .Should().ContainSingle().Subject;
                 shift.Id.Should().Be(insideId);
+                shift.DueDate.Should().Be(from.AddHours(24));
                 shift.AssignedTenant.Name.Should().Be("Assegnatario");
                 shift.AssignedRoom.Name.Should().Be("Bagno");
                 shift.Checklist.Should().ContainSingle();

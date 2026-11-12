@@ -20,7 +20,7 @@ namespace Coinquilindo.Application.Tests
             room.AddCleaningTask(new CleaningTask("Lavare il pavimento"));
             house.AddRoom(room);
             var tenant = house.Tenants.Single();
-            var shift = new Shift(house.Id, tenant, room, DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+            var shift = new Shift(house.Id, tenant, room, new DateOnly(2026, 11, 2), new DateOnly(2026, 11, 8), TimeZoneInfo.Utc);
             _houseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
             _shiftRepository.GetByHouseIdAsync(house.Id, Arg.Any<CancellationToken>())
                 .Returns(new[] { shift });
@@ -52,7 +52,7 @@ namespace Coinquilindo.Application.Tests
             var room = new Room("Bagno");
             house.AddRoom(room);
             var shift = new Shift(house.Id, house.Tenants.Single(t => t.UserId == assignee.Id), room,
-                DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+                new DateOnly(2026, 11, 2), new DateOnly(2026, 11, 8), TimeZoneInfo.Utc);
             var report = new Report(house.Tenants.Single(t => t.UserId == member.Id), "Pavimento sporco",
                 "0f8fad5bd9cb469fa165708167e1f3e1.png");
             shift.AddReport(report);

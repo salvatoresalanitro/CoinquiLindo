@@ -114,7 +114,7 @@ namespace CoinquiLindo.Api.Tests
 
         private static async Task AssignShiftAsync(HouseContext house, Guid tenantId)
         {
-            var end = DateTime.UtcNow.Date.AddDays(7);
+            var end = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(7);
             using var response = await house.Owner.PostAsJsonAsync($"/api/houses/{house.HouseId}/shifts",
                 new AssignShiftRequest(tenantId, house.RoomId, end.AddDays(-7), end));
             response.EnsureSuccessStatusCode();

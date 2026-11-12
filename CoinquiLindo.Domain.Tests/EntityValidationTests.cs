@@ -59,23 +59,50 @@ namespace CoinquiLindo.Domain.Tests
         }
 
         [Theory]
-        [InlineData(0)]
         [InlineData(-1)]
-        public void Shift_Should_ThrowValidation_When_EndDateIsNotAfterStartDate(int daysOffset)
+        [InlineData(-30)]
+        public void Shift_Should_ThrowValidation_When_EndDateIsBeforeStartDate(int daysOffset)
         {
-            var start = DateTime.UtcNow;
+            var start = new DateOnly(2026, 11, 2);
 
-            var action = () => new Shift(Guid.NewGuid(), new Tenant("Salvo"), new Room("Bagno"), start, start.AddDays(daysOffset));
+            var action = () => new Shift(Guid.NewGuid(), new Tenant("Salvo"), new Room("Bagno"),
+                start, start.AddDays(daysOffset), TimeZoneInfo.Utc);
 
             action.Should().Throw<DomainValidationException>()
                 .Which.Code.Should().Be("Shift.InvalidDateRange");
+        }
+
+        [Theory]
+        [InlineData(null, "Europe/Rome")]
+        [InlineData("  ", "Europe/Rome")]
+        [InlineData("America/New_York", "America/New_York")]
+        [InlineData(" Europe/Lisbon ", "Europe/Lisbon")]
+        // Windows ids (sent by desktop clients) are stored as IANA so every server OS resolves them
+        [InlineData("W. Europe Standard Time", "Europe/Berlin")]
+        public void House_Should_StoreIanaTimeZone(string? timeZoneId, string expected)
+        {
+            var house = new House("Casa", timeZoneId);
+
+            house.TimeZoneId.Should().Be(expected);
+            house.GetTimeZone().BaseUtcOffset.Should().Be(TimeZoneInfo.FindSystemTimeZoneById(expected).BaseUtcOffset);
+        }
+
+        [Theory]
+        [InlineData("Mars/Olympus_Mons")]
+        [InlineData("not a time zone")]
+        public void House_Should_ThrowValidation_When_TimeZoneIsUnknown(string timeZoneId)
+        {
+            var action = () => new House("Casa", timeZoneId);
+
+            action.Should().Throw<DomainValidationException>()
+                .Which.Code.Should().Be("House.TimeZoneInvalid");
         }
 
         [Fact]
         public void Shift_Should_ThrowValidation_When_HouseIdIsEmpty()
         {
             var action = () => new Shift(Guid.Empty, new Tenant("Salvo"), new Room("Bagno"),
-                DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+                new DateOnly(2026, 11, 2), new DateOnly(2026, 11, 8), TimeZoneInfo.Utc);
 
             action.Should().Throw<DomainValidationException>()
                 .Which.Code.Should().Be("Shift.HouseRequired");

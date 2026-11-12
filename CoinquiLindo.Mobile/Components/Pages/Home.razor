@@ -129,7 +129,8 @@
         isLoading = true;
         error = null;
 
-        var result = await ApiClient.CreateHouseAsync(houseName.Trim());
+        // Shift days and deadlines follow the time zone of the house: the creator's device is the best guess
+        var result = await ApiClient.CreateHouseAsync(houseName.Trim(), TimeZoneInfo.Local.Id);
 
         isLoading = false;
 

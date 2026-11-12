@@ -10,7 +10,7 @@ namespace CoinquiLindo.Application.Houses.Commands
             var creator = await userRepository.GetByIdAsync(request.RequesterUserId, cancellationToken)
                 ?? throw new NotFoundException(nameof(User), request.RequesterUserId);
 
-            var house = new House(request.Name);
+            var house = new House(request.Name, request.TimeZoneId);
             house.AddMember(creator);
 
             await houseRepository.AddAsync(house, cancellationToken);

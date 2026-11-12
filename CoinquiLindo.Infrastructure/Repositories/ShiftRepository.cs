@@ -40,10 +40,10 @@ namespace CoinquiLindo.Infrastructure.Repositories
                 .AsSplitQuery()
                 .FirstOrDefaultAsync(shift => shift.HouseId == houseId && shift.Id == shiftId, cancellationToken);
 
-        public async Task<IReadOnlyList<Shift>> GetEndingBetweenAsync(DateTime fromExclusive, DateTime toInclusive, CancellationToken cancellationToken = default) =>
+        public async Task<IReadOnlyList<Shift>> GetDueBetweenAsync(DateTime fromExclusive, DateTime toInclusive, CancellationToken cancellationToken = default) =>
             await dbContext.Shifts
                 .AsNoTracking()
-                .Where(shift => shift.EndDate > fromExclusive && shift.EndDate <= toInclusive)
+                .Where(shift => shift.DueDate > fromExclusive && shift.DueDate <= toInclusive)
                 .Include(shift => shift.AssignedTenant)
                 .Include(shift => shift.AssignedRoom)
                 .Include(shift => shift.Checklist)

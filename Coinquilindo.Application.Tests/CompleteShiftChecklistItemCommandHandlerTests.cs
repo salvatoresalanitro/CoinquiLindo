@@ -19,7 +19,7 @@ namespace Coinquilindo.Application.Tests
             var room = new Room("Bagno");
             room.AddCleaningTask(new CleaningTask("Lavare il pavimento"));
             house.AddRoom(room);
-            var shift = new Shift(house.Id, house.Tenants.Single(), room, DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+            var shift = new Shift(house.Id, house.Tenants.Single(), room, new DateOnly(2026, 11, 2), new DateOnly(2026, 11, 8), TimeZoneInfo.Utc);
             var item = shift.Checklist.Single();
             _houseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
             _shiftRepository.GetByIdAsync(house.Id, shift.Id, Arg.Any<CancellationToken>()).Returns(shift);

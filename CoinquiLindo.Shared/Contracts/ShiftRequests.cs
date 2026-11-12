@@ -3,7 +3,8 @@
     public record AssignShiftRequest(
         Guid TenantId,
         Guid RoomId,
-        DateTime StartDate,
-        DateTime EndDate
+        // Calendar days in the house time zone, both inclusive
+        DateOnly StartDate,
+        DateOnly EndDate
     );
 }

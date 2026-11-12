@@ -113,7 +113,7 @@ namespace CoinquiLindo.Application.Notifications
 
         private DateTime Now => timeProvider.GetUtcNow().UtcDateTime;
 
-        private static string FormatDate(DateTime value) => value.ToString("dd/MM", CultureInfo.InvariantCulture);
+        private static string FormatDate(DateOnly value) => value.ToString("dd/MM", CultureInfo.InvariantCulture);
 
         private static string Preview(string text) =>
             text.Length <= DescriptionPreviewLength ? text : string.Concat(text.AsSpan(0, DescriptionPreviewLength - 1), "…");

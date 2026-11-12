@@ -56,7 +56,10 @@ namespace CoinquiLindo.Api.Endpoints
 
         private static async Task<IResult> CreateHouse([FromBody] CreateHouseRequest request, ClaimsPrincipal user, IMessageBus bus, CancellationToken ct)
         {
-            var command = new CreateHouseCommand(Name: request.Name, RequesterUserId: user.GetUserId());
+            var command = new CreateHouseCommand(
+                Name: request.Name,
+                TimeZoneId: request.TimeZoneId,
+                RequesterUserId: user.GetUserId());
             var id = await bus.InvokeAsync<Guid>(command, ct);
 
             return Results.Ok(id);

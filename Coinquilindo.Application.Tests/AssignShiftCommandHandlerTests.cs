@@ -26,9 +26,29 @@ namespace Coinquilindo.Application.Tests
             HouseId: houseId,
             RoomId: roomId,
             TenantId: tenantId,
-            StartDate: DateTime.UtcNow,
-            EndDate: DateTime.UtcNow.AddDays(7),
+            StartDate: new DateOnly(2026, 11, 2),
+            EndDate: new DateOnly(2026, 11, 8),
             RequesterUserId: requesterUserId);
+
+        [Fact]
+        public async Task Handler_Should_SetDueDateAtEndOfLastDay_InHouseTimeZone()
+        {
+            // Arrange
+            var (house, member) = TestData.HouseWithMember("Casa a New York", "America/New_York");
+            var room = new Room("Bagno");
+            house.AddRoom(room);
+            _mockHouseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
+
+            // Act
+            await _handler.Handle(Command(house.Id, room.Id, house.Tenants.Single().Id, member.Id), CancellationToken.None);
+
+            // Assert: 09/11 00:00 in New York (UTC-5)
+            await _mockShiftRepository.Received(1).AddAsync(
+                Arg.Is<Shift>(s => s.StartDate == new DateOnly(2026, 11, 2)
+                    && s.EndDate == new DateOnly(2026, 11, 8)
+                    && s.DueDate == new DateTime(2026, 11, 9, 5, 0, 0, DateTimeKind.Utc)),
+                Arg.Any<CancellationToken>());
+        }
 
         [Fact]
         public async Task Handler_Should_CreateAndSaveShift_When_DataIsValid()

@@ -50,6 +50,11 @@ namespace CoinquiLindo.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("TimeZoneId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("InviteCode")
@@ -275,13 +280,16 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Property<Guid>("AssignedTenantId")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("EndDate")
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("EndDate")
                         .HasColumnType("TEXT");
 
                     b.Property<Guid>("HouseId")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("StartDate")
+                    b.Property<DateOnly>("StartDate")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -289,6 +297,8 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.HasIndex("AssignedRoomId");
 
                     b.HasIndex("AssignedTenantId");
+
+                    b.HasIndex("DueDate");
 
                     b.HasIndex("HouseId");
 

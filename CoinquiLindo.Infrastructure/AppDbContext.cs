@@ -26,6 +26,7 @@ namespace CoinquiLindo.Infrastructure
             {
                 b.HasKey(h => h.Id);
                 b.Property(h => h.InviteCode).HasMaxLength(House.InviteCodeLength);
+                b.Property(h => h.TimeZoneId).HasMaxLength(House.MaxTimeZoneIdLength);
                 b.HasIndex(h => h.InviteCode).IsUnique();
                 b.Metadata.FindNavigation(nameof(House.Tenants))!
                     .SetPropertyAccessMode(PropertyAccessMode.Field);
@@ -48,6 +49,13 @@ namespace CoinquiLindo.Infrastructure
                 b.HasOne<House>().WithMany().HasForeignKey(s => s.HouseId).OnDelete(DeleteBehavior.Restrict);
                 b.HasOne(s => s.AssignedTenant).WithMany();
                 b.HasOne(s => s.AssignedRoom).WithMany();
+
+                // SQLite has no time zone info: without this the deadline is read back as Unspecified
+                // and serialized without "Z", so clients would treat it as local time
+                b.Property(s => s.DueDate).HasConversion(
+                    value => value,
+                    value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
+                b.HasIndex(s => s.DueDate);
 
                 b.Metadata.FindNavigation(nameof(Shift.Checklist))!
                     .SetPropertyAccessMode(PropertyAccessMode.Field);

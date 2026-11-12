@@ -158,7 +158,7 @@ namespace Coinquilindo.Application.Tests
             var room = new Room("Bagno");
             house.AddRoom(room);
             var assigneeTenant = house.Tenants.Single(tenant => tenant.UserId == assignee.Id);
-            var shift = new Shift(house.Id, assigneeTenant, room, DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+            var shift = new Shift(house.Id, assigneeTenant, room, new DateOnly(2026, 11, 2), new DateOnly(2026, 11, 8), TimeZoneInfo.Utc);
             _houseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
             _shiftRepository.GetByIdAsync(house.Id, shift.Id, Arg.Any<CancellationToken>()).Returns(shift);
             return (house, reporter, shift);

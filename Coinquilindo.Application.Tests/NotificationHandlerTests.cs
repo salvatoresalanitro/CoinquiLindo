@@ -61,7 +61,7 @@ namespace Coinquilindo.Application.Tests
 
             await new AssignShiftCommandHandler(_houseRepository, _shiftRepository, Publisher).Handle(
                 new AssignShiftCommand(scenario.House.Id, RoomId: scenario.Room.Id, TenantId: scenario.AssigneeTenant.Id,
-                    Now.UtcDateTime, Now.UtcDateTime.AddDays(7), scenario.Reporter.Id),
+                    new DateOnly(2026, 11, 10), new DateOnly(2026, 11, 16), scenario.Reporter.Id),
                 CancellationToken.None);
 
             _pushDispatcher.DidNotReceive().Enqueue(Arg.Any<Guid>());
@@ -90,7 +90,7 @@ namespace Coinquilindo.Application.Tests
 
             var shiftId = await new AssignShiftCommandHandler(_houseRepository, _shiftRepository, Publisher).Handle(
                 new AssignShiftCommand(scenario.House.Id, RoomId: scenario.Room.Id, TenantId: scenario.AssigneeTenant.Id,
-                    Now.UtcDateTime, Now.UtcDateTime.AddDays(7), scenario.Reporter.Id),
+                    new DateOnly(2026, 11, 10), new DateOnly(2026, 11, 16), scenario.Reporter.Id),
                 CancellationToken.None);
 
             var notification = _added.Should().ContainSingle().Subject;
@@ -98,7 +98,7 @@ namespace Coinquilindo.Application.Tests
             notification.Type.Should().Be(NotificationType.ShiftAssigned);
             notification.HouseId.Should().Be(scenario.House.Id);
             notification.ShiftId.Should().Be(shiftId);
-            notification.Body.Should().Contain("Bagno");
+            notification.Body.Should().Contain("Bagno").And.Contain("dal 10/11 al 16/11");
             notification.CreatedAt.Should().Be(Now.UtcDateTime);
         }
 
@@ -109,7 +109,7 @@ namespace Coinquilindo.Application.Tests
 
             await new AssignShiftCommandHandler(_houseRepository, _shiftRepository, Publisher).Handle(
                 new AssignShiftCommand(scenario.House.Id, RoomId: scenario.Room.Id, TenantId: scenario.AssigneeTenant.Id,
-                    Now.UtcDateTime, Now.UtcDateTime.AddDays(7), scenario.Assignee.Id),
+                    new DateOnly(2026, 11, 10), new DateOnly(2026, 11, 16), scenario.Assignee.Id),
                 CancellationToken.None);
 
             _added.Should().BeEmpty();
@@ -124,7 +124,7 @@ namespace Coinquilindo.Application.Tests
 
             await new AssignShiftCommandHandler(_houseRepository, _shiftRepository, Publisher).Handle(
                 new AssignShiftCommand(scenario.House.Id, RoomId: scenario.Room.Id, TenantId: legacy.Id,
-                    Now.UtcDateTime, Now.UtcDateTime.AddDays(7), scenario.Reporter.Id),
+                    new DateOnly(2026, 11, 10), new DateOnly(2026, 11, 16), scenario.Reporter.Id),
                 CancellationToken.None);
 
             _added.Should().BeEmpty();
@@ -216,13 +216,13 @@ namespace Coinquilindo.Application.Tests
         public async Task ShiftDueSoon_Should_NotifyAssigneesOfIncompleteShiftsEndingWithinLeadTime_Once()
         {
             var scenario = Arrange();
-            var incomplete = scenario.CreateShift(endsAt: Now.UtcDateTime.AddHours(5));
-            var completed = scenario.CreateShift(endsAt: Now.UtcDateTime.AddHours(6));
+            var incomplete = scenario.CreateShift();
+            var completed = scenario.CreateShift();
             completed.MarkItemAsCompleted(completed.Checklist.Single().Id);
-            var alreadyNotified = scenario.CreateShift(endsAt: Now.UtcDateTime.AddHours(7));
+            var alreadyNotified = scenario.CreateShift();
             var legacyShift = new Shift(scenario.House.Id, new Tenant("Senza account"), scenario.Room,
-                Now.UtcDateTime.AddDays(-6), Now.UtcDateTime.AddHours(8));
-            _shiftRepository.GetEndingBetweenAsync(Now.UtcDateTime, Now.UtcDateTime.AddHours(24), Arg.Any<CancellationToken>())
+                Scenario.ShiftStart, Scenario.ShiftEnd, scenario.House.GetTimeZone());
+            _shiftRepository.GetDueBetweenAsync(Now.UtcDateTime, Now.UtcDateTime.AddHours(24), Arg.Any<CancellationToken>())
                 .Returns([incomplete, completed, alreadyNotified, legacyShift]);
             _notifications.ExistsForShiftAsync(scenario.Assignee.Id, NotificationType.ShiftDueSoon, alreadyNotified.Id, Arg.Any<CancellationToken>())
                 .Returns(true);
@@ -236,6 +236,8 @@ namespace Coinquilindo.Application.Tests
             notification.Type.Should().Be(NotificationType.ShiftDueSoon);
             notification.ShiftId.Should().Be(incomplete.Id);
             notification.Body.Should().Contain("Bagno");
+            // The reminder names the last day of the shift, not the day after
+            notification.Body.Should().Contain("scade il 10/11");
         }
 
         [Theory]
@@ -341,11 +343,11 @@ namespace Coinquilindo.Application.Tests
             House House, Room Room, User Assignee, User Reporter, User Voter,
             Tenant AssigneeTenant, Tenant ReporterTenant, Tenant VoterTenant)
         {
-            public Shift CreateShift(DateTime? endsAt = null)
-            {
-                var end = endsAt ?? Now.UtcDateTime;
-                return new Shift(House.Id, AssigneeTenant, Room, end.AddDays(-7), end);
-            }
+            public static readonly DateOnly ShiftStart = new(2026, 11, 4);
+            public static readonly DateOnly ShiftEnd = new(2026, 11, 10);
+
+            public Shift CreateShift() =>
+                new(House.Id, AssigneeTenant, Room, ShiftStart, ShiftEnd, House.GetTimeZone());
 
             public (Shift Shift, Report Report) CreateShiftWithReport()
             {

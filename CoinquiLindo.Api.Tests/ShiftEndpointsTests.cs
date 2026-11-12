@@ -11,16 +11,16 @@ namespace CoinquiLindo.Api.Tests
         public async Task HouseShifts_Should_ListAndCompleteChecklistItems()
         {
             var client = await factory.CreateAuthenticatedClientAsync(displayName: "Salvo");
-            var houseId = await client.CreateHouseAsync("Casa turni");
+            var houseId = await client.CreateHouseAsync("Casa turni", "America/New_York");
             var house = (await client.GetFromJsonAsync<HouseResponse>($"/api/houses/{houseId}"))!;
             var roomResponse = await client.PostAsJsonAsync(
                 $"/api/houses/{houseId}/rooms",
                 new AddRoomRequest("Bagno", ["Lavare il pavimento"]));
             var roomId = await roomResponse.Content.ReadFromJsonAsync<Guid>();
-            var startDate = DateTime.UtcNow.Date;
+            var startDate = new DateOnly(2026, 11, 2);
             var assignResponse = await client.PostAsJsonAsync(
                 $"/api/houses/{houseId}/shifts",
-                new AssignShiftRequest(house.Tenants.Single().Id, roomId, startDate, startDate.AddDays(7)));
+                new AssignShiftRequest(house.Tenants.Single().Id, roomId, startDate, startDate.AddDays(6)));
             var shiftId = await assignResponse.Content.ReadFromJsonAsync<Guid>();
 
             var shifts = (await client.GetFromJsonAsync<List<ShiftResponse>>($"/api/houses/{houseId}/shifts"))!;
@@ -28,6 +28,11 @@ namespace CoinquiLindo.Api.Tests
             var item = shift.Checklist.Should().ContainSingle().Which;
             shift.Id.Should().Be(shiftId);
             shift.HouseId.Should().Be(houseId);
+            shift.StartDate.Should().Be(startDate);
+            shift.EndDate.Should().Be(new DateOnly(2026, 11, 8));
+            // End of 08/11 in New York, sent as a UTC instant so every client converts it correctly
+            shift.DueDate.Should().Be(new DateTime(2026, 11, 9, 5, 0, 0, DateTimeKind.Utc));
+            shift.DueDate.Kind.Should().Be(DateTimeKind.Utc);
             shift.AssignedTenantName.Should().Be("Salvo");
             shift.AssignedRoomName.Should().Be("Bagno");
             item.Description.Should().Be("Lavare il pavimento");
@@ -42,6 +47,38 @@ namespace CoinquiLindo.Api.Tests
             updatedShifts!.Single().Checklist.Single().IsCompleted.Should().BeTrue();
             updatedShifts.Single().Checklist.Single().CompletedAt.Should().NotBeNull();
             updatedShifts.Single().IsShiftFullyCompleted.Should().BeTrue();
+        }
+
+        [Theory]
+        [InlineData(0, HttpStatusCode.OK)]
+        [InlineData(-1, HttpStatusCode.BadRequest)]
+        public async Task AssignShift_Should_AcceptSingleDayShift_AndRejectEndBeforeStart(int endOffsetDays, HttpStatusCode expected)
+        {
+            var client = await factory.CreateAuthenticatedClientAsync();
+            var houseId = await client.CreateHouseAsync("Casa date");
+            var house = (await client.GetFromJsonAsync<HouseResponse>($"/api/houses/{houseId}"))!;
+            var roomResponse = await client.PostAsJsonAsync($"/api/houses/{houseId}/rooms", new AddRoomRequest("Bagno", null));
+            var roomId = await roomResponse.Content.ReadFromJsonAsync<Guid>();
+            var startDate = new DateOnly(2026, 11, 2);
+
+            var response = await client.PostAsJsonAsync($"/api/houses/{houseId}/shifts",
+                new AssignShiftRequest(house.Tenants.Single().Id, roomId, startDate, startDate.AddDays(endOffsetDays)));
+
+            response.StatusCode.Should().Be(expected);
+            if (expected == HttpStatusCode.BadRequest)
+            {
+                (await response.ReadProblemAsync(HttpStatusCode.BadRequest)).ErrorCode.Should().Be("Shift.InvalidDateRange");
+            }
+        }
+
+        [Fact]
+        public async Task CreateHouse_Should_Return400_When_TimeZoneIsUnknown()
+        {
+            var client = await factory.CreateAuthenticatedClientAsync();
+
+            var response = await client.PostAsJsonAsync("/api/houses", new CreateHouseRequest("Casa", "Mars/Olympus_Mons"));
+
+            (await response.ReadProblemAsync(HttpStatusCode.BadRequest)).ErrorCode.Should().Be("House.TimeZoneInvalid");
         }
 
         [Fact]
@@ -67,7 +104,7 @@ namespace CoinquiLindo.Api.Tests
                 $"/api/houses/{otherHouseId}/rooms",
                 new AddRoomRequest("Bagno", ["Lavare il pavimento"]));
             var roomId = await roomResponse.Content.ReadFromJsonAsync<Guid>();
-            var startDate = DateTime.UtcNow.Date;
+            var startDate = new DateOnly(2026, 11, 2);
             var assignResponse = await client.PostAsJsonAsync(
                 $"/api/houses/{otherHouseId}/shifts",
                 new AssignShiftRequest(otherHouse.Tenants.Single().Id, roomId, startDate, startDate.AddDays(7)));

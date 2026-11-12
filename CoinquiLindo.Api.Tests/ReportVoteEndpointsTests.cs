@@ -147,7 +147,7 @@ namespace CoinquiLindo.Api.Tests
             using var shiftResponse = await assignee.PostAsJsonAsync(
                 $"/api/houses/{houseId}/shifts",
                 new AssignShiftRequest(assigneeTenantId, roomId,
-                    DateTime.UtcNow.Date.AddDays(-7), DateTime.UtcNow.Date.AddDays(-1)));
+                    DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7), DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1)));
             shiftResponse.EnsureSuccessStatusCode();
             var shiftId = await shiftResponse.Content.ReadFromJsonAsync<Guid>();
 

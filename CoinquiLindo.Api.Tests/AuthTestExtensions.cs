@@ -25,9 +25,9 @@ namespace CoinquiLindo.Api.Tests
             return client;
         }
 
-        public static async Task<Guid> CreateHouseAsync(this HttpClient client, string name = "Casa Test")
+        public static async Task<Guid> CreateHouseAsync(this HttpClient client, string name = "Casa Test", string? timeZoneId = null)
         {
-            var response = await client.PostAsJsonAsync("/api/houses", new CreateHouseRequest(name));
+            var response = await client.PostAsJsonAsync("/api/houses", new CreateHouseRequest(name, timeZoneId));
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadFromJsonAsync<Guid>();

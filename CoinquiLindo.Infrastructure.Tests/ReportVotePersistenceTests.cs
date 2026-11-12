@@ -194,7 +194,7 @@ namespace CoinquiLindo.Infrastructure.Tests
                 var shift = new Shift(house.Id,
                     await context.Tenants.SingleAsync(tenant => tenant.Id == assignee.Id),
                     await context.Rooms.SingleAsync(r => r.Id == room.Id),
-                    DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+                    new DateOnly(2026, 11, 2), new DateOnly(2026, 11, 8), TimeZoneInfo.Utc);
                 var report = new Report(await context.Tenants.SingleAsync(tenant => tenant.Id == reporter.Id),
                     "Pavimento sporco", PhotoKey);
                 shift.AddReport(report);

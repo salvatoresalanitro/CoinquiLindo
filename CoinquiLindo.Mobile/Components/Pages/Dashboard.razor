@@ -327,8 +327,9 @@
     private ApiError? shiftError;
     private string selectedTenantId = string.Empty;
     private string selectedRoomId = string.Empty;
-    private DateTime newShiftStartDate = DateTime.UtcNow.Date;
-    private DateTime newShiftEndDate = DateTime.UtcNow.Date.AddDays(7);
+    // Calendar days, both inclusive: one week by default
+    private DateOnly newShiftStartDate = DateOnly.FromDateTime(DateTime.Now);
+    private DateOnly newShiftEndDate = DateOnly.FromDateTime(DateTime.Now).AddDays(6);
 
     private bool CanAssignShift =>
         house is not null &&
@@ -336,7 +337,7 @@
         house.Rooms.Count > 0 &&
         Guid.TryParse(selectedTenantId, out _) &&
         Guid.TryParse(selectedRoomId, out _) &&
-        newShiftEndDate.Date > newShiftStartDate.Date;
+        newShiftEndDate >= newShiftStartDate;
 
     protected override async Task OnInitializedAsync()
     {
@@ -431,8 +432,8 @@
         var request = new AssignShiftRequest(
             tenantId,
             roomId,
-            DateTime.SpecifyKind(newShiftStartDate.Date, DateTimeKind.Utc),
-            DateTime.SpecifyKind(newShiftEndDate.Date, DateTimeKind.Utc));
+            newShiftStartDate,
+            newShiftEndDate);
         var result = await ApiClient.AssignShiftAsync(HouseId, request);
 
         if (result.IsSuccess)
@@ -475,7 +476,8 @@
         }
     }
 
-    private static bool IsPastShift(ShiftResponse shift) => shift.EndDate.Date < DateTime.UtcNow.Date;
+    // DueDate is the end of the last day in the house time zone, whatever the time zone of this device
+    private static bool IsPastShift(ShiftResponse shift) => shift.DueDate.ToUniversalTime() <= DateTime.UtcNow;
 
     private async Task CopyInviteCode()
     {

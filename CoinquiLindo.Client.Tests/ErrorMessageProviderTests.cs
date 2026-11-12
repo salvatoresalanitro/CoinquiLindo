@@ -7,6 +7,7 @@ namespace CoinquiLindo.Client.Tests
         // Keep aligned with the errorCode list in PROJECT_BIBLE.md §6
         [Theory]
         [InlineData("House.NameRequired")]
+        [InlineData("House.TimeZoneInvalid")]
         [InlineData("House.NotFound")]
         [InlineData("House.RoomNameAlreadyExists")]
         [InlineData("Tenant.NameRequired")]

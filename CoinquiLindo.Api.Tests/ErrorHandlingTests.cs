@@ -62,7 +62,7 @@ namespace CoinquiLindo.Api.Tests
         public async Task AssignShift_Should_Return404Problem_When_TenantNotInHouse()
         {
             var houseId = await _client.CreateHouseAsync();
-            var request = new AssignShiftRequest(Guid.NewGuid(), Guid.NewGuid(), DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+            var request = new AssignShiftRequest(Guid.NewGuid(), Guid.NewGuid(), DateOnly.FromDateTime(DateTime.UtcNow), DateOnly.FromDateTime(DateTime.UtcNow).AddDays(7));
 
             var response = await _client.PostAsJsonAsync($"/api/houses/{houseId}/shifts", request);
 

@@ -8,10 +8,10 @@ namespace CoinquiLindo.Client
 {
     public class CoinquiLindoApiClient(HttpClient httpClient, ILogger<CoinquiLindoApiClient> logger)
     {
-        public async Task<ApiResult<Guid>> CreateHouseAsync(string name, CancellationToken cancellationToken = default)
+        public async Task<ApiResult<Guid>> CreateHouseAsync(string name, string? timeZoneId = null, CancellationToken cancellationToken = default)
         {
             var (value, error) = await SendAsync<Guid>(
-                ct => httpClient.PostAsJsonAsync("/api/houses", new CreateHouseRequest(name), ct), readBody: true, cancellationToken);
+                ct => httpClient.PostAsJsonAsync("/api/houses", new CreateHouseRequest(name, timeZoneId), ct), readBody: true, cancellationToken);
 
             return error is null ? ApiResult<Guid>.Success(value) : ApiResult<Guid>.Failure(error);
         }

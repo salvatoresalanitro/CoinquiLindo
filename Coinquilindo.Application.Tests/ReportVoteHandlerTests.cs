@@ -174,7 +174,7 @@ namespace Coinquilindo.Application.Tests
             var voterTenant = house.AddMember(voter);
             var room = new Room("Bagno");
             house.AddRoom(room);
-            var shift = new Shift(house.Id, assigneeTenant, room, DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+            var shift = new Shift(house.Id, assigneeTenant, room, new DateOnly(2026, 11, 2), new DateOnly(2026, 11, 8), TimeZoneInfo.Utc);
             var report = new Report(reporterTenant, "Pavimento sporco", PhotoKey);
             shift.AddReport(report);
             _houseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);

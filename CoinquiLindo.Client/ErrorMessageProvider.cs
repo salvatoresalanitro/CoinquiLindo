@@ -8,6 +8,7 @@ namespace CoinquiLindo.Client
         private static readonly Dictionary<string, string> MessagesByCode = new(StringComparer.Ordinal)
         {
             ["House.NameRequired"] = "Inserisci un nome per la casa.",
+            ["House.TimeZoneInvalid"] = "Il fuso orario del dispositivo non è riconosciuto. Controlla le impostazioni di data e ora.",
             ["House.NotFound"] = "La casa non esiste o è stata rimossa.",
             ["House.RoomNameAlreadyExists"] = "Esiste già una stanza con questo nome.",
             ["Tenant.NameRequired"] = "Inserisci il nome del coinquilino.",

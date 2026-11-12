@@ -24,6 +24,24 @@ namespace CoinquiLindo.Client.Tests
         }
 
         [Fact]
+        public async Task CreateHouse_Should_SendDeviceTimeZone()
+        {
+            CreateHouseRequest? sent = null;
+            var client = CreateClient(new StubHttpMessageHandler(async (message, _) =>
+            {
+                sent = await System.Net.Http.Json.HttpContentJsonExtensions.ReadFromJsonAsync<CreateHouseRequest>(message.Content!);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = System.Net.Http.Json.JsonContent.Create(Guid.NewGuid())
+                };
+            }));
+
+            await client.CreateHouseAsync("Casa", "Europe/Rome");
+
+            sent.Should().Be(new CreateHouseRequest("Casa", "Europe/Rome"));
+        }
+
+        [Fact]
         public async Task GetHouse_Should_ReturnHouse_When_ApiSucceeds()
         {
             var id = Guid.NewGuid();

@@ -17,7 +17,7 @@ namespace CoinquiLindo.Domain.Tests
 
         public ReportVoteTests()
         {
-            _shift = new Shift(Guid.NewGuid(), _assignee, new Room("Bagno"), DateTime.UtcNow.AddDays(-7), DateTime.UtcNow);
+            _shift = new Shift(Guid.NewGuid(), _assignee, new Room("Bagno"), new DateOnly(2026, 11, 2), new DateOnly(2026, 11, 8), TimeZoneInfo.Utc);
             _report = new Report(_reporter, "Pavimento sporco", PhotoKey);
             _shift.AddReport(_report);
         }

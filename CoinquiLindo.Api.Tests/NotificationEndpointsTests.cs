@@ -19,7 +19,7 @@ namespace CoinquiLindo.Api.Tests
         {
             var house = await CreateHouseWithMembersAsync();
 
-            var shiftId = await AssignShiftAsync(house, DateTime.UtcNow.Date.AddDays(7));
+            var shiftId = await AssignShiftAsync(house, TodayInHouse.AddDays(7));
             var assigneeNotifications = await GetNotificationsAsync(house.Assignee);
             assigneeNotifications.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
@@ -62,7 +62,8 @@ namespace CoinquiLindo.Api.Tests
         public async Task ShiftDueSoonJob_Should_NotifyAssigneeOnce()
         {
             var house = await CreateHouseWithMembersAsync();
-            var shiftId = await AssignShiftAsync(house, DateTime.UtcNow.AddHours(12));
+            // Last day = today: the shift expires at the next midnight of the house, always within 24 hours
+            var shiftId = await AssignShiftAsync(house, TodayInHouse);
 
             await RunDueSoonJobAsync();
             await RunDueSoonJobAsync();
@@ -71,6 +72,23 @@ namespace CoinquiLindo.Api.Tests
                 .Should().ContainSingle(n => n.Type == NotificationKind.ShiftDueSoon)
                 .Which.ShiftId.Should().Be(shiftId);
         }
+
+        // Regression: the reminder used to fire a day early because EndDate was midnight UTC of the last day
+        [Fact]
+        public async Task ShiftDueSoonJob_Should_NotNotify_When_LastDayIsTomorrow()
+        {
+            var house = await CreateHouseWithMembersAsync();
+            await AssignShiftAsync(house, TodayInHouse.AddDays(1));
+
+            await RunDueSoonJobAsync();
+
+            (await GetNotificationsAsync(house.Assignee))
+                .Should().NotContain(n => n.Type == NotificationKind.ShiftDueSoon);
+        }
+
+        // Houses created without a time zone use the server default (Europe/Rome)
+        private static DateOnly TodayInHouse => DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Europe/Rome")).DateTime);
 
         [Fact]
         public async Task NotificationEndpoints_Should_RejectAnonymousRequests()
@@ -98,7 +116,7 @@ namespace CoinquiLindo.Api.Tests
         private static async Task<List<NotificationResponse>> GetNotificationsAsync(HttpClient client, bool unreadOnly = false) =>
             (await client.GetFromJsonAsync<List<NotificationResponse>>($"{NotificationsRoute}?unreadOnly={unreadOnly}"))!;
 
-        private static async Task<Guid> AssignShiftAsync(HouseContext house, DateTime endDate)
+        private static async Task<Guid> AssignShiftAsync(HouseContext house, DateOnly endDate)
         {
             using var response = await house.Owner.PostAsJsonAsync($"/api/houses/{house.HouseId}/shifts",
                 new AssignShiftRequest(house.AssigneeTenantId, house.RoomId, endDate.AddDays(-7), endDate));

@@ -29,6 +29,7 @@ namespace CoinquiLindo.Application.Shifts.Queries
                 shift.AssignedRoom.Name,
                 shift.StartDate,
                 shift.EndDate,
+                shift.DueDate,
                 shift.IsShiftFullyCompleted,
                 shift.Checklist
                     .OrderBy(item => item.Description, StringComparer.OrdinalIgnoreCase)

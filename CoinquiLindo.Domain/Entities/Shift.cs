@@ -9,8 +9,12 @@ namespace CoinquiLindo.Domain.Entities
         public Guid HouseId { get; private set; }
         public Tenant AssignedTenant { get; private set; }
         public Room AssignedRoom { get; private set; }
-        public DateTime StartDate { get; private set; }
-        public DateTime EndDate { get; private set; }
+        // Calendar days in the house time zone, both inclusive
+        public DateOnly StartDate { get; private set; }
+        public DateOnly EndDate { get; private set; }
+
+        // UTC instant at which EndDate ends in the house time zone: the deadline used by reminders and history
+        public DateTime DueDate { get; private set; }
 
         private readonly List<ShiftChecklistItem> _checklist = new();
         private readonly List<Report> _reports = new();
@@ -18,7 +22,7 @@ namespace CoinquiLindo.Domain.Entities
         public IReadOnlyCollection<Report> Reports => _reports.AsReadOnly();
         public IReadOnlyCollection<ShiftChecklistItem> Checklist => _checklist.AsReadOnly();
 
-        public Shift(Guid houseId, Tenant assignedTenant, Room assignedRoom, DateTime startDate, DateTime endDate)
+        public Shift(Guid houseId, Tenant assignedTenant, Room assignedRoom, DateOnly startDate, DateOnly endDate, TimeZoneInfo timeZone)
         {
             if (houseId == Guid.Empty)
             {
@@ -28,9 +32,11 @@ namespace CoinquiLindo.Domain.Entities
             ArgumentNullException.ThrowIfNull(assignedTenant, nameof(assignedTenant));
             ArgumentNullException.ThrowIfNull(assignedRoom, nameof(assignedRoom));
 
-            if (endDate <= startDate)
+            ArgumentNullException.ThrowIfNull(timeZone, nameof(timeZone));
+
+            if (endDate < startDate)
             {
-                throw new DomainValidationException("Shift.InvalidDateRange", "End date must be after start date.");
+                throw new DomainValidationException("Shift.InvalidDateRange", "End date cannot be before start date.");
             }
 
             Id = Guid.NewGuid();
@@ -39,6 +45,7 @@ namespace CoinquiLindo.Domain.Entities
             AssignedRoom = assignedRoom;
             StartDate = startDate;
             EndDate = endDate;
+            DueDate = EndOfDayUtc(endDate, timeZone);
 
             // Initialize the checklist with the cleaning tasks of the assigned room
             foreach (var task in assignedRoom.CleaningTasks)
@@ -102,6 +109,30 @@ namespace CoinquiLindo.Domain.Entities
                 ?? throw new NotFoundException(nameof(Report), reportId);
 
         public bool IsShiftFullyCompleted => _checklist.All(c => c.IsCompleted);
+
+        // A day ends when the local clock first reaches midnight of the next day
+        private static DateTime EndOfDayUtc(DateOnly day, TimeZoneInfo timeZone)
+        {
+            var nextMidnight = day.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+
+            TimeSpan offset;
+            if (timeZone.IsInvalidTime(nextMidnight))
+            {
+                // Clocks jump forward exactly at midnight: the day ends at the jump, still on the previous offset
+                offset = timeZone.GetUtcOffset(nextMidnight.AddHours(-3));
+            }
+            else if (timeZone.IsAmbiguousTime(nextMidnight))
+            {
+                // Midnight happens twice (clocks go back to it): the first one, on the larger offset, ends the day
+                offset = timeZone.GetAmbiguousTimeOffsets(nextMidnight).Max();
+            }
+            else
+            {
+                offset = timeZone.GetUtcOffset(nextMidnight);
+            }
+
+            return DateTime.SpecifyKind(nextMidnight - offset, DateTimeKind.Utc);
+        }
 
 #pragma warning disable CS8618 // It's needed for EF Core to work properly, but we don't want to allow it to be used outside of EF Core.
         private Shift() { }

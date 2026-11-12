@@ -12,7 +12,7 @@ namespace CoinquiLindo.Application.Notifications.Commands
             ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(request.LeadTime, TimeSpan.Zero, nameof(request.LeadTime));
 
             var now = timeProvider.GetUtcNow().UtcDateTime;
-            var shifts = await shiftRepository.GetEndingBetweenAsync(now, now.Add(request.LeadTime), cancellationToken);
+            var shifts = await shiftRepository.GetDueBetweenAsync(now, now.Add(request.LeadTime), cancellationToken);
 
             var created = 0;
             foreach (var shift in shifts)

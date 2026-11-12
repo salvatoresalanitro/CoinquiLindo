@@ -13,8 +13,10 @@ namespace CoinquiLindo.Shared.Contracts
         string AssignedTenantName,
         Guid AssignedRoomId,
         string AssignedRoomName,
-        DateTime StartDate,
-        DateTime EndDate,
+        DateOnly StartDate,
+        DateOnly EndDate,
+        // UTC instant at which the shift expires (end of EndDate in the house time zone)
+        DateTime DueDate,
         bool IsShiftFullyCompleted,
         List<ShiftChecklistItemResponse> Checklist,
         List<ReportResponse> Reports,
