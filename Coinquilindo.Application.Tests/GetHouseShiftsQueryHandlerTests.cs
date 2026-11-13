@@ -24,7 +24,7 @@ namespace Coinquilindo.Application.Tests
             _houseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
             _shiftRepository.GetByHouseIdAsync(house.Id, Arg.Any<CancellationToken>())
                 .Returns(new[] { shift });
-            var handler = new GetHouseShiftsQueryHandler(_houseRepository, _shiftRepository);
+            var handler = new GetHouseShiftsQueryHandler(_houseRepository, _shiftRepository, Substitute.For<IRotationPlanRepository>());
 
             var result = await handler.Handle(new GetHouseShiftsQuery(house.Id, member.Id), CancellationToken.None);
 
@@ -58,7 +58,7 @@ namespace Coinquilindo.Application.Tests
             shift.AddReport(report);
             _houseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
             _shiftRepository.GetByHouseIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(new[] { shift });
-            var handler = new GetHouseShiftsQueryHandler(_houseRepository, _shiftRepository);
+            var handler = new GetHouseShiftsQueryHandler(_houseRepository, _shiftRepository, Substitute.For<IRotationPlanRepository>());
 
             var result = await handler.Handle(new GetHouseShiftsQuery(house.Id, member.Id), CancellationToken.None);
 
@@ -73,7 +73,7 @@ namespace Coinquilindo.Application.Tests
         {
             var (house, _) = TestData.HouseWithMember("Casa");
             _houseRepository.GetByIdAsync(house.Id, Arg.Any<CancellationToken>()).Returns(house);
-            var handler = new GetHouseShiftsQueryHandler(_houseRepository, _shiftRepository);
+            var handler = new GetHouseShiftsQueryHandler(_houseRepository, _shiftRepository, Substitute.For<IRotationPlanRepository>());
 
             var action = () => handler.Handle(new GetHouseShiftsQuery(house.Id, Guid.NewGuid()), CancellationToken.None);
 

@@ -16,6 +16,7 @@ namespace CoinquiLindo.Infrastructure
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<Notification> Notifications => Set<Notification>();
+        public DbSet<RotationPlan> RotationPlans => Set<RotationPlan>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -57,10 +58,34 @@ namespace CoinquiLindo.Infrastructure
                     value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
                 b.HasIndex(s => s.DueDate);
 
+                // Plain reference to the rotation plan (no FK): the plan can be deleted, the shifts stay as history
+                b.Property(s => s.RotationPlanId);
+                // One generated shift per room and week of a plan: makes the job and concurrent saves idempotent
+                b.HasIndex(nameof(Shift.RotationPlanId), "AssignedRoomId", nameof(Shift.StartDate))
+                    .IsUnique()
+                    .HasFilter("\"RotationPlanId\" IS NOT NULL")
+                    .HasDatabaseName("IX_Shifts_OneRotationShiftPerRoomAndWeek");
+
+                b.HasOne(s => s.HelperTenant).WithMany().HasForeignKey("HelperTenantId")
+                    .IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+
                 b.Metadata.FindNavigation(nameof(Shift.Checklist))!
                     .SetPropertyAccessMode(PropertyAccessMode.Field);
                 b.Metadata.FindNavigation(nameof(Shift.Reports))!
                     .SetPropertyAccessMode(PropertyAccessMode.Field);
+            });
+
+            // One plan per house; the ordered ids are JSON arrays (EF primitive collections): order is the business rule
+            modelBuilder.Entity<RotationPlan>(b =>
+            {
+                b.ToTable("RotationPlans");
+                b.HasKey(p => p.Id);
+                b.HasOne<House>().WithMany().HasForeignKey(p => p.HouseId).OnDelete(DeleteBehavior.Cascade);
+                b.HasIndex(p => p.HouseId).IsUnique();
+                b.PrimitiveCollection(p => p.TenantIds).HasField("_tenantIds")
+                    .UsePropertyAccessMode(PropertyAccessMode.Field).IsRequired();
+                b.PrimitiveCollection(p => p.RoomIds).HasField("_roomIds")
+                    .UsePropertyAccessMode(PropertyAccessMode.Field).IsRequired();
             });
 
             // Report photo is mandatory: NOT NULL plus a CHECK so blank keys are rejected by the database too

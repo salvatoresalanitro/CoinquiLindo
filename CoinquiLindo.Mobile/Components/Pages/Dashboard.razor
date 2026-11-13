@@ -162,8 +162,9 @@
         </div>
 
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center gap-2">
                 <h4 class="mb-0">Turni</h4>
+                <a class="btn btn-outline-primary btn-sm" href="@($"/house/{HouseId}/rotation")">🔄 Rotazione</a>
             </div>
             <div class="card-body">
                 <ErrorAlert Error="shiftError" OnRetry="LoadShiftData" OnDismiss="() => shiftError = null" />
@@ -240,6 +241,10 @@
                                         <small class="text-muted">
                                             @shift.StartDate.ToString("dd/MM/yyyy") – @shift.EndDate.ToString("dd/MM/yyyy")
                                         </small>
+                                        @if (shift.IsFromRotation)
+                                        {
+                                            <span class="badge rounded-pill text-bg-light border ms-1">🔄 Rotazione</span>
+                                        }
                                     </div>
                                     @if (IsPastShift(shift))
                                     {
@@ -289,6 +294,8 @@
                                 {
                                     <small class="text-muted d-block mt-2">Nessuna attività prevista.</small>
                                 }
+
+                                <ShiftHelperPicker HouseId="HouseId" Shift="shift" ReadOnly="IsPastShift(shift)" OnChanged="LoadShiftData" />
 
                                 <ShiftReports HouseId="HouseId" Shift="shift" OnReportsChanged="LoadShiftData" />
                             </div>

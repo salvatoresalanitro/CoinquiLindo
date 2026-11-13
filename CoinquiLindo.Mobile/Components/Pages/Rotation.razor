@@ -1,0 +1,282 @@
+@page "/house/{HouseId:guid}/rotation"
+@inject CoinquiLindoApiClient ApiClient
+
+<div class="container mt-4">
+    <a class="btn btn-link px-0 mb-2" href="@($"/house/{HouseId}")">‹ Torna alla casa</a>
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p>Caricamento rotazione...</p>
+        </div>
+    }
+    else if (house is null)
+    {
+        <ErrorAlert Error="loadError" OnRetry="@(loadError?.Status is 403 or 404 ? default : EventCallback.Factory.Create(this, LoadAsync))" />
+    }
+    else
+    {
+        <h2 class="mb-1">Rotazione settimanale</h2>
+        <p class="text-muted small mb-4">
+            Ogni settimana le stanze scorrono di una posizione nell'ordine scelto.
+            Se i coinquilini sono più delle stanze, a turno qualcuno riposa e può dare una mano.
+        </p>
+
+        @if (house.Tenants.Count == 0 || house.Rooms.Count == 0)
+        {
+            <p class="text-muted">Aggiungi almeno un coinquilino e una stanza per creare la rotazione.</p>
+        }
+        else
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white"><h5 class="mb-0">Coinquilini</h5></div>
+                <ul class="list-group list-group-flush">
+                    @for (var i = 0; i < tenants.Count; i++)
+                    {
+                        var index = i;
+                        var entry = tenants[index];
+                        <li class="list-group-item d-flex align-items-center gap-2 @(entry.Included ? string.Empty : "text-muted")">
+                            <input class="form-check-input mt-0" type="checkbox" id="tenant-@entry.Id" @bind="entry.Included" />
+                            <label class="flex-grow-1" for="tenant-@entry.Id">@entry.Name</label>
+                            <OrderButtons OnUp="() => Move(tenants, index, -1)" OnDown="() => Move(tenants, index, 1)"
+                                          CanMoveUp="index > 0" CanMoveDown="index < tenants.Count - 1" />
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white"><h5 class="mb-0">Stanze</h5></div>
+                <ul class="list-group list-group-flush">
+                    @for (var i = 0; i < rooms.Count; i++)
+                    {
+                        var index = i;
+                        var entry = rooms[index];
+                        <li class="list-group-item d-flex align-items-center gap-2 @(entry.Included ? string.Empty : "text-muted")">
+                            <input class="form-check-input mt-0" type="checkbox" id="room-@entry.Id" @bind="entry.Included" />
+                            <label class="flex-grow-1" for="room-@entry.Id">@entry.Name</label>
+                            <OrderButtons OnUp="() => Move(rooms, index, -1)" OnDown="() => Move(rooms, index, 1)"
+                                          CanMoveUp="index > 0" CanMoveDown="index < rooms.Count - 1" />
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="rotation-start">Inizio della prima settimana</label>
+                <input id="rotation-start" type="date" class="form-control" @bind="startDate" />
+                <div class="form-text">Le modifiche valgono dalle settimane non ancora iniziate.</div>
+            </div>
+
+            <ErrorAlert Error="saveError" OnDismiss="() => saveError = null" />
+            @if (isSaved)
+            {
+                <div class="alert alert-success py-2">Rotazione salvata: i turni sono stati creati.</div>
+            }
+
+            <button class="btn btn-primary w-100 mb-2" type="button" @onclick="SaveAsync" disabled="@(isSaving || !CanSave)">
+                @if (isSaving)
+                {
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                }
+                else
+                {
+                    <span>@(plan is null ? "Crea rotazione" : "Salva modifiche")</span>
+                }
+            </button>
+
+            @if (plan is not null)
+            {
+                @if (isConfirmingDelete)
+                {
+                    <div class="border rounded-3 p-3 mb-4 small">
+                        <p class="mb-2">I turni delle settimane non ancora iniziate verranno eliminati. Continuare?</p>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-danger btn-sm" type="button" @onclick="DeleteAsync" disabled="@isDeleting">Elimina</button>
+                            <button class="btn btn-link btn-sm" type="button" @onclick="() => isConfirmingDelete = false" disabled="@isDeleting">Annulla</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <button class="btn btn-outline-danger w-100 mb-4" type="button" @onclick="() => isConfirmingDelete = true">Elimina rotazione</button>
+                }
+
+                <h5 class="mt-2">Prossime settimane</h5>
+                @foreach (var week in plan.Weeks)
+                {
+                    <div class="card week-card mb-3">
+                        <div class="card-header bg-white small fw-semibold">
+                            @week.StartDate.ToString("dd/MM") – @week.EndDate.ToString("dd/MM")
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            @foreach (var assignment in week.Assignments)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>@assignment.TenantName</span>
+                                    <span class="text-muted">@assignment.RoomName</span>
+                                </li>
+                            }
+                            @foreach (var resting in week.RestingTenants)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>@resting.Name</span>
+                                    <span class="badge text-bg-light border">Riposo 😴</span>
+                                </li>
+                            }
+                            @foreach (var room in week.UnassignedRooms)
+                            {
+                                <li class="list-group-item d-flex justify-content-between text-muted">
+                                    <span>—</span>
+                                    <span>@room.Name (nessun turno)</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            }
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid HouseId { get; set; }
+
+    private sealed class Entry(Guid id, string name, bool included)
+    {
+        public Guid Id { get; } = id;
+        public string Name { get; } = name;
+        public bool Included { get; set; } = included;
+    }
+
+    private HouseResponse? house;
+    private RotationPlanResponse? plan;
+    private List<Entry> tenants = [];
+    private List<Entry> rooms = [];
+    private DateOnly startDate = MondayOf(DateOnly.FromDateTime(DateTime.Now));
+
+    private bool isLoading = true;
+    private bool isSaving;
+    private bool isSaved;
+    private bool isDeleting;
+    private bool isConfirmingDelete;
+    private ApiError? loadError;
+    private ApiError? saveError;
+
+    private bool CanSave => tenants.Any(t => t.Included) && rooms.Any(r => r.Included);
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        loadError = null;
+
+        var houseResult = await ApiClient.GetHouseAsync(HouseId);
+        var planResult = houseResult.IsSuccess ? await ApiClient.GetRotationPlanAsync(HouseId) : null;
+
+        if (houseResult.IsSuccess && planResult is { IsSuccess: true })
+        {
+            house = houseResult.Value;
+            ApplyPlan(planResult.Value);
+        }
+        else
+        {
+            loadError = houseResult.Error ?? planResult?.Error;
+        }
+
+        isLoading = false;
+    }
+
+    // Plan order first, then the tenants/rooms of the house not in the plan (excluded)
+    private void ApplyPlan(RotationPlanResponse? saved)
+    {
+        plan = saved;
+        if (house is null)
+        {
+            return;
+        }
+
+        tenants = Order(house.Tenants.Select(t => (t.Id, t.Name)), saved?.Tenants.Select(t => t.Id).ToList());
+        rooms = Order(house.Rooms.Select(r => (r.Id, r.Name)), saved?.Rooms.Select(r => r.Id).ToList());
+        if (saved is not null)
+        {
+            startDate = saved.StartDate;
+        }
+    }
+
+    private static List<Entry> Order(IEnumerable<(Guid Id, string Name)> all, List<Guid>? planOrder)
+    {
+        var items = all.ToList();
+        if (planOrder is null)
+        {
+            return items.Select(i => new Entry(i.Id, i.Name, included: true)).ToList();
+        }
+
+        return items
+            .OrderBy(i => planOrder.IndexOf(i.Id) is var position and >= 0 ? position : int.MaxValue)
+            .Select(i => new Entry(i.Id, i.Name, planOrder.Contains(i.Id)))
+            .ToList();
+    }
+
+    private void Move(List<Entry> list, int index, int offset)
+    {
+        var target = index + offset;
+        if (target < 0 || target >= list.Count)
+        {
+            return;
+        }
+
+        (list[index], list[target]) = (list[target], list[index]);
+        isSaved = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        isSaving = true;
+        isSaved = false;
+        saveError = null;
+
+        var request = new SaveRotationPlanRequest(
+            tenants.Where(t => t.Included).Select(t => t.Id).ToList(),
+            rooms.Where(r => r.Included).Select(r => r.Id).ToList(),
+            startDate);
+        var result = await ApiClient.SaveRotationPlanAsync(HouseId, request);
+
+        if (result.IsSuccess)
+        {
+            ApplyPlan(result.Value);
+            isSaved = true;
+        }
+        else
+        {
+            saveError = result.Error;
+        }
+
+        isSaving = false;
+    }
+
+    private async Task DeleteAsync()
+    {
+        isDeleting = true;
+        saveError = null;
+
+        var result = await ApiClient.DeleteRotationPlanAsync(HouseId);
+        if (result.IsSuccess)
+        {
+            ApplyPlan(null);
+            isConfirmingDelete = false;
+            isSaved = false;
+        }
+        else
+        {
+            saveError = result.Error;
+        }
+
+        isDeleting = false;
+    }
+
+    private static DateOnly MondayOf(DateOnly day) => day.AddDays(-(((int)day.DayOfWeek + 6) % 7));
+}

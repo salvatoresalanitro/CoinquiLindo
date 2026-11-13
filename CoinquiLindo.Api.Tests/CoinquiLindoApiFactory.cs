@@ -38,6 +38,7 @@ namespace CoinquiLindo.Api.Tests
             builder.UseSetting("Auth:MobileCallbackUri", MobileCallbackUri);
             // Tests trigger the due-soon job explicitly: a background timer would make them nondeterministic
             builder.UseSetting("Notifications:SchedulerEnabled", "false");
+            builder.UseSetting("Rotation:SchedulerEnabled", "false");
 
             builder.ConfigureTestServices(services =>
             {

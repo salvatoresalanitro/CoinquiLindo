@@ -32,7 +32,32 @@ namespace CoinquiLindo.Api.Endpoints
                 .ProducesProblem(StatusCodes.Status403Forbidden)
                 .ProducesProblem(StatusCodes.Status404NotFound);
 
+            group.MapPut("/{shiftId:guid}/helper", SetHelper)
+                .Produces(StatusCodes.Status204NoContent)
+                .ProducesProblem(StatusCodes.Status403Forbidden)
+                .ProducesProblem(StatusCodes.Status404NotFound)
+                .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+            group.MapDelete("/{shiftId:guid}/helper", RemoveHelper)
+                .Produces(StatusCodes.Status204NoContent)
+                .ProducesProblem(StatusCodes.Status403Forbidden)
+                .ProducesProblem(StatusCodes.Status404NotFound)
+                .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
             return app;
+        }
+
+        private static async Task<IResult> SetHelper(
+            Guid houseId, Guid shiftId, [FromBody] SetShiftHelperRequest request, ClaimsPrincipal user, IMessageBus bus, CancellationToken ct)
+        {
+            await bus.InvokeAsync(new SetShiftHelperCommand(houseId, shiftId, request.HelperTenantId, user.GetUserId()), ct);
+            return Results.NoContent();
+        }
+
+        private static async Task<IResult> RemoveHelper(Guid houseId, Guid shiftId, ClaimsPrincipal user, IMessageBus bus, CancellationToken ct)
+        {
+            await bus.InvokeAsync(new RemoveShiftHelperCommand(houseId, shiftId, user.GetUserId()), ct);
+            return Results.NoContent();
         }
 
         private static async Task<IResult> AssignShift(Guid houseId, [FromBody] AssignShiftRequest request, ClaimsPrincipal user, IMessageBus bus, CancellationToken ct)

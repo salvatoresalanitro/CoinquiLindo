@@ -9,7 +9,8 @@ namespace CoinquiLindo.Shared.Contracts
         ShiftAssigned = 1,
         ShiftDueSoon = 2,
         ReportCreated = 3,
-        ReportVoted = 4
+        ReportVoted = 4,
+        ShiftHelperChosen = 5
     }
 
     public record NotificationResponse(

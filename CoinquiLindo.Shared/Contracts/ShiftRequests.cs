@@ -7,4 +7,6 @@
         DateOnly StartDate,
         DateOnly EndDate
     );
+
+    public record SetShiftHelperRequest(Guid HelperTenantId);
 }

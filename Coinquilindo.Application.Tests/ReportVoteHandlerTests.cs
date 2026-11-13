@@ -147,7 +147,7 @@ namespace Coinquilindo.Application.Tests
             var scenario = Arrange();
             scenario.Shift.VoteReport(scenario.Report.Id, scenario.VoterTenant, VoteType.Up);
             _shiftRepository.GetByHouseIdAsync(scenario.House.Id, Arg.Any<CancellationToken>()).Returns([scenario.Shift]);
-            var handler = new GetHouseShiftsQueryHandler(_houseRepository, _shiftRepository);
+            var handler = new GetHouseShiftsQueryHandler(_houseRepository, _shiftRepository, Substitute.For<IRotationPlanRepository>());
 
             var asVoter = (await handler.Handle(new GetHouseShiftsQuery(scenario.House.Id, scenario.Voter.Id), CancellationToken.None)).Single();
             var asAssignee = (await handler.Handle(new GetHouseShiftsQuery(scenario.House.Id, scenario.Assignee.Id), CancellationToken.None)).Single();

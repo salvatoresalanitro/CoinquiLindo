@@ -27,6 +27,21 @@ namespace CoinquiLindo.Application.Notifications
                 Now), cancellationToken);
         }
 
+        public async Task ShiftHelperChosenAsync(Shift shift, Guid requesterUserId, CancellationToken cancellationToken)
+        {
+            if (shift.HelperTenant?.UserId is not { } recipient || recipient == requesterUserId)
+            {
+                return;
+            }
+
+            await StoreAsync(new Notification(recipient, NotificationType.ShiftHelperChosen,
+                shift.HouseId, shift.Id, null,
+                "Ti hanno chiesto una mano",
+                $"{shift.AssignedTenant.Name} ti ha scelto come aiuto per il turno {shift.AssignedRoom.Name}: "
+                    + $"dal {FormatDate(shift.StartDate)} al {FormatDate(shift.EndDate)}.",
+                Now), cancellationToken);
+        }
+
         public async Task ReportCreatedAsync(House house, Shift shift, Report report, CancellationToken cancellationToken)
         {
             var description = Preview(report.Description);

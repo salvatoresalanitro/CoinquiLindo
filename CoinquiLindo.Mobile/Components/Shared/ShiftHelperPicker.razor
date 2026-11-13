@@ -1,0 +1,116 @@
+@inject CoinquiLindoApiClient ApiClient
+
+@* Helper of a rotation shift: visible to everyone once chosen, editable by the assignee (choose) and assignee/helper (remove) *@
+@if (Shift.HelperTenantName is not null || Candidates.Count > 0)
+{
+    <div class="helper-box mt-2 p-2 rounded-3 border">
+        @if (Shift.HelperTenantName is not null)
+        {
+            <div class="d-flex align-items-center justify-content-between gap-2">
+                <span class="small">🤝 Aiuto: <strong>@Shift.HelperTenantName</strong></span>
+                @if (Shift.CanRemoveHelper && !ReadOnly)
+                {
+                    <button class="btn btn-outline-secondary btn-sm" type="button" @onclick="RemoveHelper" disabled="@isBusy">
+                        @if (isBusy)
+                        {
+                            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                        }
+                        else
+                        {
+                            <span>Rimuovi</span>
+                        }
+                    </button>
+                }
+            </div>
+        }
+        else if (!ReadOnly)
+        {
+            <label class="form-label small mb-1" for="helper-@Shift.Id">Chiedi una mano a chi riposa questa settimana</label>
+            <div class="input-group input-group-sm">
+                <select id="helper-@Shift.Id" class="form-select" @bind="selectedHelperId">
+                    @foreach (var candidate in Candidates)
+                    {
+                        <option value="@candidate.Id">@candidate.Name</option>
+                    }
+                </select>
+                <button class="btn btn-primary" type="button" @onclick="SetHelper" disabled="@isBusy">
+                    @if (isBusy)
+                    {
+                        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                    }
+                    else
+                    {
+                        <span>Chiedi aiuto</span>
+                    }
+                </button>
+            </div>
+        }
+
+        <div class="mt-2">
+            <ErrorAlert Error="error" OnDismiss="() => error = null" />
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Guid HouseId { get; set; }
+    [Parameter, EditorRequired] public ShiftResponse Shift { get; set; } = default!;
+    // Past shifts: the helper is shown but can no longer be changed
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private string selectedHelperId = string.Empty;
+    private bool isBusy;
+    private ApiError? error;
+
+    private List<TenantResponse> Candidates => Shift.HelperCandidates ?? [];
+
+    protected override void OnParametersSet()
+    {
+        if (!Candidates.Any(c => c.Id.ToString() == selectedHelperId))
+        {
+            selectedHelperId = Candidates.FirstOrDefault()?.Id.ToString() ?? string.Empty;
+        }
+    }
+
+    private async Task SetHelper()
+    {
+        if (!Guid.TryParse(selectedHelperId, out var helperId))
+        {
+            return;
+        }
+
+        isBusy = true;
+        error = null;
+
+        var result = await ApiClient.SetShiftHelperAsync(HouseId, Shift.Id, helperId);
+        if (result.IsSuccess)
+        {
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            error = result.Error;
+        }
+
+        isBusy = false;
+    }
+
+    private async Task RemoveHelper()
+    {
+        isBusy = true;
+        error = null;
+
+        var result = await ApiClient.RemoveShiftHelperAsync(HouseId, Shift.Id);
+        if (result.IsSuccess)
+        {
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            error = result.Error;
+        }
+
+        isBusy = false;
+    }
+}

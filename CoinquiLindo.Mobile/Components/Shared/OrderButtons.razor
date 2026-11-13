@@ -1,0 +1,12 @@
+@* Up/down buttons to reorder a list item *@
+<div class="btn-group btn-group-sm flex-shrink-0" role="group" aria-label="Ordine">
+    <button type="button" class="btn btn-outline-secondary" aria-label="Sposta su" @onclick="OnUp" disabled="@(!CanMoveUp)">▲</button>
+    <button type="button" class="btn btn-outline-secondary" aria-label="Sposta giù" @onclick="OnDown" disabled="@(!CanMoveDown)">▼</button>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnUp { get; set; }
+    [Parameter] public EventCallback OnDown { get; set; }
+    [Parameter] public bool CanMoveUp { get; set; }
+    [Parameter] public bool CanMoveDown { get; set; }
+}

@@ -269,6 +269,33 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.ToTable("Rooms");
                 });
 
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.RotationPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("HouseId")
+                        .HasColumnType("TEXT");
+
+                    b.PrimitiveCollection<string>("RoomIds")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("TEXT");
+
+                    b.PrimitiveCollection<string>("TenantIds")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HouseId")
+                        .IsUnique();
+
+                    b.ToTable("RotationPlans", (string)null);
+                });
+
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Shift", b =>
                 {
                     b.Property<Guid>("Id")
@@ -286,7 +313,13 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Property<DateOnly>("EndDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("HelperTenantId")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid>("HouseId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("RotationPlanId")
                         .HasColumnType("TEXT");
 
                     b.Property<DateOnly>("StartDate")
@@ -300,7 +333,14 @@ namespace CoinquiLindo.Infrastructure.Migrations
 
                     b.HasIndex("DueDate");
 
+                    b.HasIndex("HelperTenantId");
+
                     b.HasIndex("HouseId");
+
+                    b.HasIndex("RotationPlanId", "AssignedRoomId", "StartDate")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Shifts_OneRotationShiftPerRoomAndWeek")
+                        .HasFilter("\"RotationPlanId\" IS NOT NULL");
 
                     b.ToTable("Shifts");
                 });
@@ -461,6 +501,15 @@ namespace CoinquiLindo.Infrastructure.Migrations
                         .HasForeignKey("HouseId");
                 });
 
+            modelBuilder.Entity("CoinquiLindo.Domain.Entities.RotationPlan", b =>
+                {
+                    b.HasOne("CoinquiLindo.Domain.Entities.House", null)
+                        .WithMany()
+                        .HasForeignKey("HouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Shift", b =>
                 {
                     b.HasOne("CoinquiLindo.Domain.Entities.Room", "AssignedRoom")
@@ -475,6 +524,11 @@ namespace CoinquiLindo.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("CoinquiLindo.Domain.Entities.Tenant", "HelperTenant")
+                        .WithMany()
+                        .HasForeignKey("HelperTenantId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("CoinquiLindo.Domain.Entities.House", null)
                         .WithMany()
                         .HasForeignKey("HouseId")
@@ -484,6 +538,8 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Navigation("AssignedRoom");
 
                     b.Navigation("AssignedTenant");
+
+                    b.Navigation("HelperTenant");
                 });
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.ShiftChecklistItem", b =>

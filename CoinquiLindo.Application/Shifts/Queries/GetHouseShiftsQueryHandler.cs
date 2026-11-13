@@ -1,4 +1,5 @@
 using CoinquiLindo.Application.Reports;
+using CoinquiLindo.Application.Rotation;
 using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
@@ -8,7 +9,8 @@ namespace CoinquiLindo.Application.Shifts.Queries
 {
     public class GetHouseShiftsQueryHandler(
         IHouseRepository houseRepository,
-        IShiftRepository shiftRepository)
+        IShiftRepository shiftRepository,
+        IRotationPlanRepository rotationPlanRepository)
     {
         public async Task<List<ShiftResponse>> Handle(GetHouseShiftsQuery request, CancellationToken cancellationToken)
         {
@@ -19,6 +21,15 @@ namespace CoinquiLindo.Application.Shifts.Queries
             var requesterTenantId = house.GetRequesterTenant(request.RequesterUserId).Id;
 
             var shifts = await shiftRepository.GetByHouseIdAsync(request.HouseId, cancellationToken);
+            var plan = await rotationPlanRepository.GetByHouseIdAsync(request.HouseId, cancellationToken);
+            var tenantNames = house.Tenants.ToDictionary(t => t.Id, t => t.Name);
+
+            List<TenantResponse> HelperCandidates(Shift shift) => shift.CanChooseHelper(requesterTenantId)
+                ? plan.GetHelperCandidateIds(shift)
+                    .Where(tenantNames.ContainsKey)
+                    .Select(id => new TenantResponse(id, tenantNames[id]))
+                    .ToList()
+                : [];
 
             return shifts.Select(shift => new ShiftResponse(
                 shift.Id,
@@ -40,7 +51,13 @@ namespace CoinquiLindo.Application.Shifts.Queries
                         item.CompletedAt))
                     .ToList(),
                 shift.ToReportResponses(requesterTenantId),
-                shift.CanReport(requesterTenantId)))
+                shift.CanReport(requesterTenantId),
+                shift.IsFromRotation,
+                shift.HelperTenant?.Id,
+                shift.HelperTenant?.Name,
+                HelperCandidates(shift),
+                shift.HelperTenant is { } helper
+                    && (requesterTenantId == shift.AssignedTenant.Id || requesterTenantId == helper.Id)))
                 .ToList();
         }
     }

@@ -98,6 +98,59 @@ namespace CoinquiLindo.Client
             return error is null ? ApiResult.Success() : ApiResult.Failure(error);
         }
 
+        // Value is null when the house has no rotation plan (204)
+        public async Task<ApiResult<RotationPlanResponse?>> GetRotationPlanAsync(Guid houseId, CancellationToken cancellationToken = default)
+        {
+            // The wrapper tells "no plan" (empty 204 body) apart from an unreadable response
+            var (value, error) = await SendAsync<OptionalBody<RotationPlanResponse>>(
+                ct => httpClient.GetAsync($"/api/houses/{houseId}/rotation", ct),
+                async (content, ct) => new OptionalBody<RotationPlanResponse>(
+                    content.Headers.ContentLength == 0 ? null : await content.ReadFromJsonAsync<RotationPlanResponse>(ct)),
+                cancellationToken);
+
+            return error is null
+                ? ApiResult<RotationPlanResponse?>.Success(value!.Value)
+                : ApiResult<RotationPlanResponse?>.Failure(error);
+        }
+
+        public async Task<ApiResult<RotationPlanResponse>> SaveRotationPlanAsync(
+            Guid houseId, SaveRotationPlanRequest request, CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<RotationPlanResponse>(
+                ct => httpClient.PutAsJsonAsync($"/api/houses/{houseId}/rotation", request, ct), readBody: true, cancellationToken);
+
+            return error is null ? ApiResult<RotationPlanResponse>.Success(value!) : ApiResult<RotationPlanResponse>.Failure(error);
+        }
+
+        public async Task<ApiResult> DeleteRotationPlanAsync(Guid houseId, CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.DeleteAsync($"/api/houses/{houseId}/rotation", ct), readBody: false, cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
+        public async Task<ApiResult> SetShiftHelperAsync(
+            Guid houseId, Guid shiftId, Guid helperTenantId, CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.PutAsJsonAsync($"/api/houses/{houseId}/shifts/{shiftId}/helper", new SetShiftHelperRequest(helperTenantId), ct),
+                readBody: false,
+                cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
+        public async Task<ApiResult> RemoveShiftHelperAsync(Guid houseId, Guid shiftId, CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.DeleteAsync($"/api/houses/{houseId}/shifts/{shiftId}/helper", ct), readBody: false, cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
+        private sealed record OptionalBody<T>(T? Value) where T : class;
+
         public async Task<ApiResult<ReportResponse>> CreateShiftReportAsync(
             Guid houseId,
             Guid shiftId,
