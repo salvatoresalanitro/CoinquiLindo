@@ -61,7 +61,7 @@ namespace Coinquilindo.Application.Tests
         public RotationHandlerTests()
         {
             _notifications.TryAddAsync(Arg.Do<Notification>(_sentNotifications.Add), Arg.Any<CancellationToken>()).Returns(true);
-            _shifts.GetByRotationPlanAsync(Arg.Any<Guid>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            _shifts.GetRotationShiftsAsync(Arg.Any<Guid>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
                 .Returns(Array.Empty<Shift>());
             _shifts.TryAddRangeAsync(Arg.Do<IReadOnlyCollection<Shift>>(_addedShifts.AddRange), Arg.Any<CancellationToken>())
                 .Returns(true);
@@ -126,7 +126,7 @@ namespace Coinquilindo.Application.Tests
             var current = s.RotationShift(plan, 0, 0, week: 0);
             var futureUntouched = s.RotationShift(plan, 0, 1, week: 1);
             _plans.GetByHouseIdAsync(s.House.Id, Arg.Any<CancellationToken>()).Returns(plan);
-            _shifts.GetByRotationPlanAsync(plan.Id, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            _shifts.GetRotationShiftsAsync(s.House.Id, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
                 .Returns([current, futureUntouched], [current]);
             var newOrder = new[] { s.Tenants[2], s.Tenants[1], s.Tenants[0] };
 
@@ -153,7 +153,7 @@ namespace Coinquilindo.Application.Tests
             var withReport = s.RotationShift(plan, 1, 2, week: 1);
             withReport.AddReport(new Report(s.Tenants[0], "Sporco", "0f8fad5bd9cb469fa165708167e1f3e1.png"));
             _plans.GetByHouseIdAsync(s.House.Id, Arg.Any<CancellationToken>()).Returns(plan);
-            _shifts.GetByRotationPlanAsync(plan.Id, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            _shifts.GetRotationShiftsAsync(s.House.Id, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
                 .Returns([withCompletedItem, withReport]);
 
             await SaveHandler.Handle(SaveCommand(s, s.Users[0].Id), CancellationToken.None);
@@ -196,7 +196,7 @@ namespace Coinquilindo.Application.Tests
             var current = s.RotationShift(plan, 0, 0, week: 0);
             var future = s.RotationShift(plan, 0, 1, week: 1);
             _plans.GetByHouseIdAsync(s.House.Id, Arg.Any<CancellationToken>()).Returns(plan);
-            _shifts.GetByRotationPlanAsync(plan.Id, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns([current, future]);
+            _shifts.GetRotationShiftsAsync(s.House.Id, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns([current, future]);
 
             await new DeleteRotationPlanCommandHandler(_houses, _plans, Generator)
                 .Handle(new DeleteRotationPlanCommand(s.House.Id, s.Users[1].Id), CancellationToken.None);
@@ -224,7 +224,7 @@ namespace Coinquilindo.Application.Tests
         {
             var s = Arrange();
 
-            var result = await new GetRotationPlanQueryHandler(_houses, _plans, _clock)
+            var result = await new GetRotationPlanQueryHandler(_houses, _plans, _shifts, _clock)
                 .Handle(new GetRotationPlanQuery(s.House.Id, s.Users[0].Id), CancellationToken.None);
 
             result.Should().BeNull();
@@ -238,7 +238,7 @@ namespace Coinquilindo.Application.Tests
             var plan = s.Plan(RotationScenario.Monday.AddDays(-7));
             _plans.GetByHouseIdAsync(s.House.Id, Arg.Any<CancellationToken>()).Returns(plan);
 
-            var result = await new GetRotationPlanQueryHandler(_houses, _plans, _clock)
+            var result = await new GetRotationPlanQueryHandler(_houses, _plans, _shifts, _clock)
                 .Handle(new GetRotationPlanQuery(s.House.Id, s.Users[0].Id), CancellationToken.None);
 
             result!.Weeks.Select(w => w.Index).Should().Equal(1, 2, 3, 4);
@@ -253,7 +253,7 @@ namespace Coinquilindo.Application.Tests
         {
             var s = Arrange();
 
-            var action = () => new GetRotationPlanQueryHandler(_houses, _plans, _clock)
+            var action = () => new GetRotationPlanQueryHandler(_houses, _plans, _shifts, _clock)
                 .Handle(new GetRotationPlanQuery(s.House.Id, Guid.NewGuid()), CancellationToken.None);
 
             await action.Should().ThrowAsync<NotHouseMemberException>();
@@ -267,7 +267,7 @@ namespace Coinquilindo.Application.Tests
             var planA = a.Plan();
             var planB = b.Plan();
             _plans.GetAllAsync(Arg.Any<CancellationToken>()).Returns([planA, planB]);
-            _shifts.GetByRotationPlanAsync(planA.Id, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            _shifts.GetRotationShiftsAsync(a.House.Id, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
                 .Returns([a.RotationShift(planA, 0, 0, week: 0), a.RotationShift(planA, 1, 1, week: 0)]);
 
             var created = await new GenerateRotationShiftsCommandHandler(_houses, _plans, Generator)

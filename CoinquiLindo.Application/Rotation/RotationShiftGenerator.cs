@@ -1,6 +1,7 @@
 using CoinquiLindo.Application.Notifications;
 using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
+using CoinquiLindo.Shared.Contracts;
 
 namespace CoinquiLindo.Application.Rotation
 {
@@ -22,7 +23,8 @@ namespace CoinquiLindo.Application.Rotation
                 return 0;
             }
 
-            var existing = await shiftRepository.GetByRotationPlanAsync(plan.Id, periods[0].StartDate, cancellationToken);
+            // Any rotation shift of the house counts, also from a deleted plan: a recreated plan must not cover the same week twice
+            var existing = await shiftRepository.GetRotationShiftsAsync(house.Id, periods[0].StartDate, cancellationToken);
             var timeZone = house.GetTimeZone();
             var shifts = new List<Shift>();
 
@@ -59,14 +61,19 @@ namespace CoinquiLindo.Application.Rotation
             return shifts.Count;
         }
 
+        // Preview of the plan: weeks already generated show their real shifts, the others the plan's assignments
+        public Task<RotationPlanResponse> ToResponseAsync(House house, RotationPlan plan, CancellationToken cancellationToken) =>
+            plan.ToResponseAsync(house, Today(house), shiftRepository, cancellationToken);
+
         // Removes the generated shifts not started yet and without activity, so a changed plan can rebuild them
         public async Task RemoveUnstartedAsync(House house, RotationPlan plan, CancellationToken cancellationToken)
         {
             var today = Today(house);
-            var shifts = await shiftRepository.GetByRotationPlanAsync(plan.Id, today, cancellationToken);
+            var shifts = await shiftRepository.GetRotationShiftsAsync(house.Id, today, cancellationToken);
 
             var removable = shifts
-                .Where(s => s.StartDate > today && s.Reports.Count == 0 && !s.Checklist.Any(item => item.IsCompleted))
+                .Where(s => s.RotationPlanId == plan.Id && s.StartDate > today
+                    && s.Reports.Count == 0 && !s.Checklist.Any(item => item.IsCompleted))
                 .ToList();
 
             if (removable.Count > 0)

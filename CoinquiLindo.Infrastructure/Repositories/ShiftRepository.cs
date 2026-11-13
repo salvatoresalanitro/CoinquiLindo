@@ -53,9 +53,11 @@ namespace CoinquiLindo.Infrastructure.Repositories
                 .AsSplitQuery()
                 .ToListAsync(cancellationToken);
 
-        public async Task<IReadOnlyList<Shift>> GetByRotationPlanAsync(Guid rotationPlanId, DateOnly endingFrom, CancellationToken cancellationToken = default) =>
+        public async Task<IReadOnlyList<Shift>> GetRotationShiftsAsync(Guid houseId, DateOnly endingFrom, CancellationToken cancellationToken = default) =>
             await dbContext.Shifts
-                .Where(shift => shift.RotationPlanId == rotationPlanId && shift.EndDate >= endingFrom)
+                .Where(shift => shift.HouseId == houseId && shift.RotationPlanId != null && shift.EndDate >= endingFrom)
+                .Include(shift => shift.AssignedTenant)
+                .Include(shift => shift.AssignedRoom)
                 .Include(shift => shift.Checklist)
                 .Include(shift => shift.Reports)
                 .AsSplitQuery()

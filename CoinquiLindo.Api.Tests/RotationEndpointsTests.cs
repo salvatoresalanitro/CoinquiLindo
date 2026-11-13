@@ -83,6 +83,46 @@ namespace CoinquiLindo.Api.Tests
                 .Should().HaveCount(2).And.OnlyContain(x => x.StartDate == monday);
         }
 
+        // Regression: recreating the plan in the same week generated the week in progress a second time
+        [Fact]
+        public async Task Rotation_Should_NotDuplicateTheWeekInProgress_When_PlanIsDeletedAndRecreated()
+        {
+            var s = await ArrangeAsync(extraMembers: 1, rooms: 2);
+            var monday = CurrentMonday();
+            var tenants = TenantOrder(s, "Salvo", "Coinquilino 1");
+            var route = $"/api/houses/{s.HouseId}/rotation";
+
+            (await s.Owner.PutAsJsonAsync(route, new SaveRotationPlanRequest(tenants, s.RoomIds, monday))).EnsureSuccessStatusCode();
+            (await s.Owner.DeleteAsync(route)).EnsureSuccessStatusCode();
+            (await s.Owner.PutAsJsonAsync(route, new SaveRotationPlanRequest(tenants, s.RoomIds, monday))).EnsureSuccessStatusCode();
+
+            var shifts = (await s.Owner.GetFromJsonAsync<List<ShiftResponse>>($"/api/houses/{s.HouseId}/shifts"))!;
+            shifts.Where(x => x.StartDate == monday).Should().HaveCount(2);
+            shifts.Where(x => x.StartDate == monday.AddDays(7)).Should().HaveCount(2);
+        }
+
+        // Regression: after a change the preview showed the new order for the week in progress, whose shifts stay as they were
+        [Fact]
+        public async Task RotationPreview_Should_ShowTheRealShifts_OfWeeksAlreadyGenerated()
+        {
+            var s = await ArrangeAsync(extraMembers: 1, rooms: 2);
+            var monday = CurrentMonday();
+            var tenants = TenantOrder(s, "Salvo", "Coinquilino 1");
+            var route = $"/api/houses/{s.HouseId}/rotation";
+            (await s.Owner.PutAsJsonAsync(route, new SaveRotationPlanRequest(tenants, s.RoomIds, monday))).EnsureSuccessStatusCode();
+
+            var reversed = await s.Owner.PutAsJsonAsync(route, new SaveRotationPlanRequest([tenants[1], tenants[0]], s.RoomIds, monday));
+            var plan = (await reversed.Content.ReadFromJsonAsync<RotationPlanResponse>())!;
+
+            // Week in progress: the shifts generated with the first order
+            plan.Weeks[0].Assignments.Should().ContainSingle(a => a.TenantId == tenants[0] && a.RoomId == s.RoomIds[0]);
+            plan.Weeks[0].Assignments.Should().ContainSingle(a => a.TenantId == tenants[1] && a.RoomId == s.RoomIds[1]);
+            // Next week: rebuilt with the new order (tenant 1 first, shifted by one)
+            plan.Weeks[1].Assignments.Should().ContainSingle(a => a.TenantId == tenants[1] && a.RoomId == s.RoomIds[1]);
+            plan.Weeks[1].Assignments.Should().ContainSingle(a => a.TenantId == tenants[0] && a.RoomId == s.RoomIds[0]);
+            (await s.Owner.GetFromJsonAsync<RotationPlanResponse>(route))!.Weeks[0].Should().BeEquivalentTo(plan.Weeks[0]);
+        }
+
         [Fact]
         public async Task SaveRotation_Should_ReturnProblemDetails_ForInvalidPlans_AndNonMembers()
         {

@@ -94,8 +94,9 @@ namespace CoinquiLindo.Infrastructure.Tests
             await using (var context = CreateContext())
             {
                 var persisted = (await new HouseRepository(context).GetByIdAsync(house.Id))!;
-                var shift = NewShift(persisted, persisted.Tenants.First(), Monday, planId);
-                shift.SetHelper(shift.AssignedTenant.Id, persisted.Tenants.Last());
+                // By name: the order of the tenants loaded from the database is not guaranteed
+                var shift = NewShift(persisted, persisted.Tenants.Single(t => t.Name == "Utente 1"), Monday, planId);
+                shift.SetHelper(shift.AssignedTenant.Id, persisted.Tenants.Single(t => t.Name == "Utente 2"));
                 await new ShiftRepository(context).AddAsync(shift);
                 shiftId = shift.Id;
             }
@@ -106,8 +107,8 @@ namespace CoinquiLindo.Infrastructure.Tests
                 var byHouse = (await new ShiftRepository(context).GetByHouseIdAsync(house.Id)).Single();
 
                 byId!.RotationPlanId.Should().Be(planId);
-                byId.HelperTenant!.Id.Should().Be(house.Tenants.Last().Id);
-                byHouse.HelperTenant!.Name.Should().Be(house.Tenants.Last().Name);
+                byId.HelperTenant!.Id.Should().Be(house.Tenants.Single(t => t.Name == "Utente 2").Id);
+                byHouse.HelperTenant!.Name.Should().Be("Utente 2");
 
                 byId.RemoveHelper(byId.AssignedTenant.Id);
                 await new ShiftRepository(context).UpdateAsync(byId);
@@ -137,7 +138,7 @@ namespace CoinquiLindo.Infrastructure.Tests
                 var persisted = (await new HouseRepository(context).GetByIdAsync(house.Id))!;
                 var repository = new ShiftRepository(context);
                 var duplicate = NewShift(persisted, persisted.Tenants.Last(), Monday, planId);
-                var otherRoom = new Shift(persisted.Id, persisted.Tenants.First(), persisted.Rooms.Last(),
+                var otherRoom = new Shift(persisted.Id, persisted.Tenants.First(), persisted.Rooms.OrderBy(r => r.Name).Last(),
                     Monday, Monday.AddDays(6), persisted.GetTimeZone(), planId);
 
                 (await repository.TryAddRangeAsync([otherRoom, duplicate])).Should().BeFalse();
@@ -168,7 +169,7 @@ namespace CoinquiLindo.Infrastructure.Tests
         }
 
         [Fact]
-        public async Task GetByRotationPlan_Should_ReturnShiftsOfThePlanNotEndedYet_AndRemoveRangeShouldDeleteThem()
+        public async Task GetRotationShifts_Should_ReturnRotationShiftsOfTheHouseNotEndedYet_AndRemoveRangeShouldDeleteThem()
         {
             var house = await SeedHouseAsync(tenants: 1, rooms: 1);
             var planId = Guid.NewGuid();
@@ -189,19 +190,21 @@ namespace CoinquiLindo.Infrastructure.Tests
             {
                 var repository = new ShiftRepository(context);
                 // Sunday 08/11 is the last day of the week starting on Monday 02/11
-                var shifts = await repository.GetByRotationPlanAsync(planId, Monday.AddDays(6));
+                var shifts = await repository.GetRotationShiftsAsync(house.Id, Monday.AddDays(6));
 
-                shifts.Select(s => s.StartDate).Should().BeEquivalentTo([Monday, Monday.AddDays(7)]);
-                shifts.Should().OnlyContain(s => s.Checklist.Count == 1);
+                // Any plan of the house (also a deleted one), never manual shifts
+                shifts.Select(s => s.StartDate).Should().BeEquivalentTo([Monday, Monday.AddDays(7), Monday.AddDays(7)]);
+                shifts.Should().OnlyContain(s => s.Checklist.Count == 1 && s.AssignedTenant != null && s.AssignedRoom != null);
+                (await repository.GetRotationShiftsAsync(Guid.NewGuid(), Monday)).Should().BeEmpty();
 
                 await repository.RemoveRangeAsync(shifts.Where(s => s.StartDate > Monday).ToList());
             }
 
             await using (var context = CreateContext())
             {
-                (await new ShiftRepository(context).GetByRotationPlanAsync(planId, Monday.AddDays(-30)))
+                (await new ShiftRepository(context).GetRotationShiftsAsync(house.Id, Monday.AddDays(-30)))
                     .Select(s => s.StartDate).Should().BeEquivalentTo([Monday.AddDays(-7), Monday]);
-                (await new ShiftRepository(context).GetByHouseIdAsync(house.Id)).Should().HaveCount(4);
+                (await new ShiftRepository(context).GetByHouseIdAsync(house.Id)).Should().HaveCount(3);
             }
         }
 
@@ -209,7 +212,7 @@ namespace CoinquiLindo.Infrastructure.Tests
             new(house, house.Tenants.Select(t => t.Id), house.Rooms.Select(r => r.Id), Monday);
 
         private static Shift NewShift(House house, Tenant tenant, DateOnly start, Guid? planId) =>
-            new(house.Id, tenant, house.Rooms.First(), start, start.AddDays(6), house.GetTimeZone(), planId);
+            new(house.Id, tenant, house.Rooms.OrderBy(r => r.Name).First(), start, start.AddDays(6), house.GetTimeZone(), planId);
 
         private async Task<House> SeedHouseAsync(int tenants, int rooms)
         {

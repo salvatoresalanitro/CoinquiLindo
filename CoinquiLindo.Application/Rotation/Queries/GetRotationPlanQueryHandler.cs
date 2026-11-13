@@ -8,6 +8,7 @@ namespace CoinquiLindo.Application.Rotation.Queries
     public class GetRotationPlanQueryHandler(
         IHouseRepository houseRepository,
         IRotationPlanRepository rotationPlanRepository,
+        IShiftRepository shiftRepository,
         TimeProvider timeProvider)
     {
         // Null when the house has no rotation plan
@@ -19,8 +20,12 @@ namespace CoinquiLindo.Application.Rotation.Queries
             house.EnsureIsMember(request.RequesterUserId);
 
             var plan = await rotationPlanRepository.GetByHouseIdAsync(house.Id, cancellationToken);
+            if (plan is null)
+            {
+                return null;
+            }
 
-            return plan?.ToResponse(house, house.Today(timeProvider));
+            return await plan.ToResponseAsync(house, house.Today(timeProvider), shiftRepository, cancellationToken);
         }
     }
 }

@@ -33,7 +33,7 @@ namespace CoinquiLindo.Application.Rotation.Commands
 
             await shiftGenerator.GenerateAsync(house, plan, request.RequesterUserId, cancellationToken);
 
-            return plan.ToResponse(house, shiftGenerator.Today(house));
+            return await shiftGenerator.ToResponseAsync(house, plan, cancellationToken);
         }
 
         // Saving the same plan again must not rebuild the next weeks (helpers chosen there would be lost)
