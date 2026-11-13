@@ -16,6 +16,7 @@
     private readonly CancellationTokenSource polling = new();
     private Microsoft.Maui.Controls.Window? window;
     private bool isInForeground = true;
+    private bool isDisposed;
 
     private string AriaLabel => Notifications.UnreadCount == 0
         ? "Notifiche"
@@ -59,19 +60,30 @@
 
     private void OnCountChanged() => _ = InvokeAsync(StateHasChanged);
 
-    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) =>
-        _ = Notifications.RefreshAsync(polling.Token);
+    // The router handles the same LocationChanged first: when the layout changes (e.g. logout -> /login) it disposes
+    // this component, yet this handler still runs for that event. Without the flag polling.Token throws ObjectDisposedException
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        if (!isDisposed)
+        {
+            _ = Notifications.RefreshAsync(polling.Token);
+        }
+    }
 
     private void OnWindowStopped(object? sender, EventArgs e) => isInForeground = false;
 
     private void OnWindowResumed(object? sender, EventArgs e)
     {
         isInForeground = true;
-        _ = Notifications.RefreshAsync(polling.Token);
+        if (!isDisposed)
+        {
+            _ = Notifications.RefreshAsync(polling.Token);
+        }
     }
 
     public void Dispose()
     {
+        isDisposed = true;
         polling.Cancel();
         polling.Dispose();
         Notifications.Changed -= OnCountChanged;

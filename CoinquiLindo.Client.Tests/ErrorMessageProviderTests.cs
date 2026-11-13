@@ -34,6 +34,8 @@ namespace CoinquiLindo.Client.Tests
         [InlineData("Shift.SelfReportNotAllowed")]
         [InlineData("ShiftChecklistItem.NotFound")]
         [InlineData("Shift.HelperNotAllowed")]
+        [InlineData("Room.CleaningTaskAlreadyExists")]
+        [InlineData("CleaningTask.NotFound")]
         [InlineData("RotationPlan.TenantsRequired")]
         [InlineData("RotationPlan.RoomsRequired")]
         [InlineData("RotationPlan.DuplicateTenant")]

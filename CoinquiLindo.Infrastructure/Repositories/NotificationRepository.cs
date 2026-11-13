@@ -1,4 +1,4 @@
-using CoinquiLindo.Domain.Entities;
+﻿using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Enums;
 using CoinquiLindo.Domain.RepositoriesInterfaces;
 using Microsoft.Data.Sqlite;
@@ -33,6 +33,11 @@ namespace CoinquiLindo.Infrastructure.Repositories
         public Task<Notification?> GetUnreadForReportAsync(Guid recipientUserId, NotificationType type, Guid reportId, CancellationToken cancellationToken = default) =>
             dbContext.Notifications.FirstOrDefaultAsync(
                 n => n.RecipientUserId == recipientUserId && n.Type == type && n.ReportId == reportId && n.ReadAt == null,
+                cancellationToken);
+
+        public Task<Notification?> GetUnreadForHouseAsync(Guid recipientUserId, NotificationType type, Guid houseId, CancellationToken cancellationToken = default) =>
+            dbContext.Notifications.FirstOrDefaultAsync(
+                n => n.RecipientUserId == recipientUserId && n.Type == type && n.HouseId == houseId && n.ReadAt == null,
                 cancellationToken);
 
         public Task<bool> ExistsForShiftAsync(Guid recipientUserId, NotificationType type, Guid shiftId, CancellationToken cancellationToken = default) =>

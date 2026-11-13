@@ -1,0 +1,157 @@
+@inject CoinquiLindoApiClient ApiClient
+
+@* Cleaning tasks of a room: tap a task to rename or delete it, "+ attività" to add one.
+   Changes reach the shifts of the room not started yet and are notified to the flatmates (server side). *@
+<div class="d-flex flex-wrap gap-1 mt-2">
+    @foreach (var task in Room.CleaningTasks)
+    {
+        <button type="button"
+                class="badge rounded-pill border task-chip @(editingTaskId == task.Id ? "text-bg-primary" : "text-bg-light")"
+                @onclick="() => StartEditing(task)" disabled="@isBusy">
+            @task.Description
+        </button>
+    }
+
+    @if (!isAdding)
+    {
+        <button type="button" class="badge rounded-pill border border-primary text-primary bg-transparent task-chip"
+                @onclick="StartAdding" disabled="@isBusy">
+            + attività
+        </button>
+    }
+</div>
+
+@if (Room.CleaningTasks.Count == 0 && !isAdding)
+{
+    <small class="text-muted d-block mt-1">Nessuna attività di pulizia</small>
+}
+
+@if (editingTaskId is { } taskId)
+{
+    <div class="task-editor mt-2 p-2 rounded-3 border">
+        @if (isConfirmingDelete)
+        {
+            <p class="small mb-2">Eliminare «@EditingDescription»? Verrà tolta anche dai turni non ancora iniziati.</p>
+            <div class="d-flex gap-2">
+                <button class="btn btn-danger btn-sm" type="button" @onclick="() => RemoveAsync(taskId)" disabled="@isBusy">Elimina</button>
+                <button class="btn btn-link btn-sm" type="button" @onclick="() => isConfirmingDelete = false" disabled="@isBusy">Annulla</button>
+            </div>
+        }
+        else
+        {
+            <input type="text" class="form-control form-control-sm mb-2" @bind="editText" @bind:event="oninput"
+                   @onkeydown="e => OnKeyDown(e, () => RenameAsync(taskId))" aria-label="Descrizione attività" />
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-sm" type="button" @onclick="() => RenameAsync(taskId)"
+                        disabled="@(isBusy || string.IsNullOrWhiteSpace(editText))">Salva</button>
+                <button class="btn btn-outline-danger btn-sm" type="button" @onclick="() => isConfirmingDelete = true" disabled="@isBusy">Elimina</button>
+                <button class="btn btn-link btn-sm ms-auto" type="button" @onclick="Close" disabled="@isBusy">Annulla</button>
+            </div>
+        }
+    </div>
+}
+
+@if (isAdding)
+{
+    <div class="task-editor mt-2 p-2 rounded-3 border">
+        <input type="text" class="form-control form-control-sm mb-2" placeholder="Nuova attività (es. Pulire i vetri)"
+               @bind="newText" @bind:event="oninput" @onkeydown="e => OnKeyDown(e, AddAsync)" aria-label="Nuova attività" />
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary btn-sm" type="button" @onclick="AddAsync"
+                    disabled="@(isBusy || string.IsNullOrWhiteSpace(newText))">
+                @if (isBusy)
+                {
+                    <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                }
+                else
+                {
+                    <span>Aggiungi</span>
+                }
+            </button>
+            <button class="btn btn-link btn-sm ms-auto" type="button" @onclick="Close" disabled="@isBusy">Annulla</button>
+        </div>
+    </div>
+}
+
+<div class="mt-2">
+    <ErrorAlert Error="error" OnDismiss="() => error = null" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Guid HouseId { get; set; }
+    [Parameter, EditorRequired] public RoomResponse Room { get; set; } = default!;
+    // The parent reloads rooms and shifts: shifts not started yet may have changed too
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private Guid? editingTaskId;
+    private string editText = string.Empty;
+    private bool isConfirmingDelete;
+    private bool isAdding;
+    private string newText = string.Empty;
+    private bool isBusy;
+    private ApiError? error;
+
+    private string EditingDescription => Room.CleaningTasks.FirstOrDefault(t => t.Id == editingTaskId)?.Description ?? string.Empty;
+
+    private void StartEditing(CleaningTaskResponse task)
+    {
+        Close();
+        editingTaskId = task.Id;
+        editText = task.Description;
+    }
+
+    private void StartAdding()
+    {
+        Close();
+        isAdding = true;
+    }
+
+    private void Close()
+    {
+        editingTaskId = null;
+        isConfirmingDelete = false;
+        isAdding = false;
+        newText = string.Empty;
+        error = null;
+    }
+
+    private static async Task OnKeyDown(KeyboardEventArgs e, Func<Task> action)
+    {
+        if (e.Key == "Enter")
+        {
+            await action();
+        }
+    }
+
+    private Task AddAsync() =>
+        string.IsNullOrWhiteSpace(newText) ? Task.CompletedTask : RunAsync(() => ApiClient.AddCleaningTaskAsync(HouseId, Room.Id, newText.Trim()));
+
+    private Task RenameAsync(Guid taskId) =>
+        string.IsNullOrWhiteSpace(editText) ? Task.CompletedTask : RunAsync(() => ApiClient.UpdateCleaningTaskAsync(HouseId, Room.Id, taskId, editText.Trim()));
+
+    private Task RemoveAsync(Guid taskId) => RunAsync(() => ApiClient.RemoveCleaningTaskAsync(HouseId, Room.Id, taskId));
+
+    private async Task RunAsync<TResult>(Func<Task<TResult>> call) where TResult : ApiResult
+    {
+        if (isBusy)
+        {
+            return;
+        }
+
+        isBusy = true;
+        error = null;
+
+        var result = await call();
+        if (result.IsSuccess)
+        {
+            Close();
+            await OnChanged.InvokeAsync();
+        }
+        else
+        {
+            error = result.Error;
+        }
+
+        isBusy = false;
+    }
+}

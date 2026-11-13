@@ -59,9 +59,30 @@ namespace CoinquiLindo.Domain.Entities
             // Initialize the checklist with the cleaning tasks of the assigned room
             foreach (var task in assignedRoom.CleaningTasks)
             {
-                _checklist.Add(new ShiftChecklistItem(task.Description));
+                _checklist.Add(new ShiftChecklistItem(task.Description, task.Id));
             }
         }
+
+        // Keep the checklist of a shift not started yet aligned with the cleaning tasks of its room
+        public void AddChecklistItem(CleaningTask task)
+        {
+            ArgumentNullException.ThrowIfNull(task, nameof(task));
+            if (_checklist.All(item => item.CleaningTaskId != task.Id))
+            {
+                _checklist.Add(new ShiftChecklistItem(task.Description, task.Id));
+            }
+        }
+
+        // The completion state is kept: the task is the same, only its wording changed
+        public void RenameChecklistItem(Guid cleaningTaskId, string description)
+        {
+            foreach (var item in _checklist.Where(item => item.CleaningTaskId == cleaningTaskId))
+            {
+                item.Rename(description);
+            }
+        }
+
+        public void RemoveChecklistItem(Guid cleaningTaskId) => _checklist.RemoveAll(item => item.CleaningTaskId == cleaningTaskId);
 
         public void MarkItemAsCompleted(Guid checklistId)
         {

@@ -1,4 +1,4 @@
-using CoinquiLindo.Domain.Entities;
+﻿using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Enums;
 
 namespace CoinquiLindo.Domain.RepositoriesInterfaces
@@ -14,6 +14,7 @@ namespace CoinquiLindo.Domain.RepositoriesInterfaces
         // Background use only (push dispatch): no recipient check
         Task<Notification?> FindAsync(Guid notificationId, CancellationToken cancellationToken = default);
         Task<Notification?> GetUnreadForReportAsync(Guid recipientUserId, NotificationType type, Guid reportId, CancellationToken cancellationToken = default);
+        Task<Notification?> GetUnreadForHouseAsync(Guid recipientUserId, NotificationType type, Guid houseId, CancellationToken cancellationToken = default);
         Task<bool> ExistsForShiftAsync(Guid recipientUserId, NotificationType type, Guid shiftId, CancellationToken cancellationToken = default);
         Task<IReadOnlyList<Notification>> GetForRecipientAsync(Guid recipientUserId, bool unreadOnly, int take, CancellationToken cancellationToken = default);
         Task<int> CountUnreadAsync(Guid recipientUserId, CancellationToken cancellationToken = default);

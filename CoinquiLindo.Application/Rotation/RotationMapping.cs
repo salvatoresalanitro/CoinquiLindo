@@ -9,10 +9,6 @@ namespace CoinquiLindo.Application.Rotation
     {
         public const int MaxPreviewWeeks = 8;
 
-        // Current calendar day in the house time zone: weeks and deadlines are interpreted there (ADR-018)
-        public static DateOnly Today(this House house, TimeProvider timeProvider) =>
-            DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(timeProvider.GetUtcNow(), house.GetTimeZone()).DateTime);
-
         public static async Task<RotationPlanResponse> ToResponseAsync(
             this RotationPlan plan, House house, DateOnly today, IShiftRepository shiftRepository, CancellationToken cancellationToken)
         {

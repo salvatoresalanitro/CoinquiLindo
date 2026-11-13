@@ -1,3 +1,4 @@
+using CoinquiLindo.Application.Houses;
 using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.Exceptions;
 using CoinquiLindo.Domain.RepositoriesInterfaces;

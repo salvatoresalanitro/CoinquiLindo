@@ -54,6 +54,8 @@
     font-size: 0.875rem;
     color: #495057;
     overflow-wrap: anywhere;
+    /* Grouped notifications list one change per line */
+    white-space: pre-line;
 }
 
 .notification-time {

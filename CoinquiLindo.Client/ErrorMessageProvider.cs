@@ -16,6 +16,8 @@ namespace CoinquiLindo.Client
             ["Room.NameRequired"] = "Inserisci un nome per la stanza.",
             ["Room.NotFound"] = "La stanza selezionata non fa parte di questa casa.",
             ["CleaningTask.DescriptionRequired"] = "La descrizione dell'attività non può essere vuota.",
+            ["CleaningTask.NotFound"] = "L'attività non esiste più: forse un coinquilino l'ha appena eliminata.",
+            ["Room.CleaningTaskAlreadyExists"] = "Questa stanza ha già un'attività con questa descrizione.",
             ["Report.DescriptionRequired"] = "Descrivi il problema da segnalare.",
             ["Report.PhotoRequired"] = "Scatta una foto per documentare il problema.",
             ["Report.PhotoInvalid"] = "La foto non è valida. Scattane un'altra.",

@@ -1,4 +1,4 @@
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using CoinquiLindo.Shared.Contracts;
@@ -94,6 +94,36 @@ namespace CoinquiLindo.Client
                     ct),
                 readBody: false,
                 cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
+        public async Task<ApiResult<Guid>> AddCleaningTaskAsync(Guid houseId, Guid roomId, string description, CancellationToken cancellationToken = default)
+        {
+            var (value, error) = await SendAsync<Guid>(
+                ct => httpClient.PostAsJsonAsync($"/api/houses/{houseId}/rooms/{roomId}/tasks", new AddCleaningTaskRequest(description), ct),
+                readBody: true,
+                cancellationToken);
+
+            return error is null ? ApiResult<Guid>.Success(value) : ApiResult<Guid>.Failure(error);
+        }
+
+        public async Task<ApiResult> UpdateCleaningTaskAsync(
+            Guid houseId, Guid roomId, Guid taskId, string description, CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.PutAsJsonAsync(
+                    $"/api/houses/{houseId}/rooms/{roomId}/tasks/{taskId}", new UpdateCleaningTaskRequest(description), ct),
+                readBody: false,
+                cancellationToken);
+
+            return error is null ? ApiResult.Success() : ApiResult.Failure(error);
+        }
+
+        public async Task<ApiResult> RemoveCleaningTaskAsync(Guid houseId, Guid roomId, Guid taskId, CancellationToken cancellationToken = default)
+        {
+            var (_, error) = await SendAsync<object>(
+                ct => httpClient.DeleteAsync($"/api/houses/{houseId}/rooms/{roomId}/tasks/{taskId}", ct), readBody: false, cancellationToken);
 
             return error is null ? ApiResult.Success() : ApiResult.Failure(error);
         }

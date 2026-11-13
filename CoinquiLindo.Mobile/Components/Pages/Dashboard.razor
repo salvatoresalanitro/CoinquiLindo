@@ -101,19 +101,7 @@
                         {
                             <li class="list-group-item">
                                 <div class="fw-semibold">@room.Name</div>
-                                @if (room.CleaningTasks.Any())
-                                {
-                                    <div class="d-flex flex-wrap gap-1 mt-2">
-                                        @foreach (var task in room.CleaningTasks)
-                                        {
-                                            <span class="badge rounded-pill text-bg-light border">@task.Description</span>
-                                        }
-                                    </div>
-                                }
-                                else
-                                {
-                                    <small class="text-muted">Nessuna attività di pulizia</small>
-                                }
+                                <RoomTasksEditor HouseId="HouseId" Room="room" OnChanged="RefreshHouseData" />
                             </li>
                         }
                     </ul>

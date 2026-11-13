@@ -26,7 +26,7 @@ namespace CoinquiLindo.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid?>("RoomId")
+                    b.Property<Guid>("RoomId")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -104,6 +104,11 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.HasIndex("HouseId");
 
                     b.HasIndex("RecipientUserId", "ReadAt", "CreatedAt");
+
+                    b.HasIndex("RecipientUserId", "Type", "HouseId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_Notifications_OneUnreadTaskSummaryPerHouse")
+                        .HasFilter("\"Type\" = 6 AND \"ReadAt\" IS NULL");
 
                     b.HasIndex("RecipientUserId", "Type", "ReportId")
                         .IsUnique()
@@ -350,6 +355,9 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("CleaningTaskId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("TEXT");
 
@@ -360,7 +368,7 @@ namespace CoinquiLindo.Infrastructure.Migrations
                     b.Property<bool>("IsCompleted")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid?>("ShiftId")
+                    b.Property<Guid>("ShiftId")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
@@ -428,7 +436,9 @@ namespace CoinquiLindo.Infrastructure.Migrations
                 {
                     b.HasOne("CoinquiLindo.Domain.Entities.Room", null)
                         .WithMany("CleaningTasks")
-                        .HasForeignKey("RoomId");
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Notification", b =>
@@ -546,7 +556,9 @@ namespace CoinquiLindo.Infrastructure.Migrations
                 {
                     b.HasOne("CoinquiLindo.Domain.Entities.Shift", null)
                         .WithMany("Checklist")
-                        .HasForeignKey("ShiftId");
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("CoinquiLindo.Domain.Entities.Tenant", b =>

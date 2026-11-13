@@ -42,6 +42,46 @@ namespace CoinquiLindo.Application.Notifications
                 Now), cancellationToken);
         }
 
+        public Task CleaningTaskAddedAsync(House house, Tenant author, Room room, string description, CancellationToken cancellationToken) =>
+            CleaningTasksChangedAsync(house, author, $"{author.Name} ha aggiunto «{description}» in {room.Name}.", cancellationToken);
+
+        public Task CleaningTaskRenamedAsync(House house, Tenant author, Room room, string previous, string description,
+            CancellationToken cancellationToken) =>
+            CleaningTasksChangedAsync(house, author, $"{author.Name} ha modificato «{previous}» in «{description}» ({room.Name}).", cancellationToken);
+
+        public Task CleaningTaskRemovedAsync(House house, Tenant author, Room room, string description, CancellationToken cancellationToken) =>
+            CleaningTasksChangedAsync(house, author, $"{author.Name} ha eliminato «{description}» da {room.Name}.", cancellationToken);
+
+        // Grouped: one unread notification per recipient and house, the newest change on top (the body is truncated at the end)
+        private async Task CleaningTasksChangedAsync(House house, Tenant author, string change, CancellationToken cancellationToken)
+        {
+            const string title = "Attività delle stanze aggiornate";
+
+            foreach (var tenant in house.Tenants)
+            {
+                if (tenant.UserId is not { } recipient || tenant.Id == author.Id)
+                {
+                    continue;
+                }
+
+                var unread = await notificationRepository.GetUnreadForHouseAsync(
+                    recipient, NotificationType.CleaningTasksChanged, house.Id, cancellationToken);
+                if (unread is not null)
+                {
+                    unread.Refresh(title, $"{change}\n{unread.Body}", Now);
+                    if (await notificationRepository.TryUpdateAsync(unread, cancellationToken))
+                    {
+                        pushDispatcher.Enqueue(unread.Id);
+                    }
+
+                    continue;
+                }
+
+                await StoreAsync(new Notification(recipient, NotificationType.CleaningTasksChanged,
+                    house.Id, null, null, title, change, Now), cancellationToken);
+            }
+        }
+
         public async Task ReportCreatedAsync(House house, Shift shift, Report report, CancellationToken cancellationToken)
         {
             var description = Preview(report.Description);

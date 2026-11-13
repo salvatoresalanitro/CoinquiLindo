@@ -171,6 +171,39 @@ namespace CoinquiLindo.Infrastructure.Tests
             }
         }
 
+        [Fact]
+        public async Task CleaningTasksChanged_Should_AllowOnlyOneUnreadNotificationPerRecipientAndHouse()
+        {
+            var seed = await SeedAsync();
+            var first = Create(seed.UserId, seed.HouseId, NotificationType.CleaningTasksChanged, Now);
+
+            await using (var context = CreateContext())
+            {
+                var repository = CreateRepository(context);
+                (await repository.TryAddAsync(first)).Should().BeTrue();
+                (await repository.TryAddAsync(Create(seed.UserId, seed.HouseId, NotificationType.CleaningTasksChanged, Now)))
+                    .Should().BeFalse();
+                // Another recipient of the same house has their own
+                (await repository.TryAddAsync(Create(seed.OtherUserId, seed.HouseId, NotificationType.CleaningTasksChanged, Now)))
+                    .Should().BeTrue();
+            }
+
+            await using (var context = CreateContext())
+            {
+                var repository = CreateRepository(context);
+                var unread = await repository.GetUnreadForHouseAsync(seed.UserId, NotificationType.CleaningTasksChanged, seed.HouseId);
+                unread!.Id.Should().Be(first.Id);
+                (await repository.GetUnreadForHouseAsync(seed.UserId, NotificationType.CleaningTasksChanged, Guid.NewGuid())).Should().BeNull();
+
+                unread.MarkAsRead(Now);
+                await repository.UpdateAsync(unread);
+                (await repository.GetUnreadForHouseAsync(seed.UserId, NotificationType.CleaningTasksChanged, seed.HouseId)).Should().BeNull();
+                // Once read, the next change starts a new notification
+                (await repository.TryAddAsync(Create(seed.UserId, seed.HouseId, NotificationType.CleaningTasksChanged, Now.AddHours(1))))
+                    .Should().BeTrue();
+            }
+        }
+
         private static Notification Create(Guid userId, Guid houseId, NotificationType type, DateTime createdAt,
             Guid? shiftId = null, Guid? reportId = null) =>
             new(userId, type, houseId, shiftId, reportId, "Titolo", "Testo", createdAt);

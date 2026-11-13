@@ -1,3 +1,4 @@
+using CoinquiLindo.Application.Houses;
 using CoinquiLindo.Application.Notifications;
 using CoinquiLindo.Domain.Entities;
 using CoinquiLindo.Domain.RepositoriesInterfaces;

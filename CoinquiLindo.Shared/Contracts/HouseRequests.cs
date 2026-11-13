@@ -4,4 +4,8 @@
     public record CreateHouseRequest(string Name, string? TimeZoneId = null);
 
     public record AddRoomRequest(string Name, List<string>? CleaningTasks);
+
+    public record AddCleaningTaskRequest(string Description);
+
+    public record UpdateCleaningTaskRequest(string Description);
 }

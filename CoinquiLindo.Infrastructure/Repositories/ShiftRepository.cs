@@ -63,6 +63,12 @@ namespace CoinquiLindo.Infrastructure.Repositories
                 .AsSplitQuery()
                 .ToListAsync(cancellationToken);
 
+        public async Task<IReadOnlyList<Shift>> GetByRoomStartingAfterAsync(Guid houseId, Guid roomId, DateOnly startingAfter, CancellationToken cancellationToken = default) =>
+            await dbContext.Shifts
+                .Where(shift => shift.HouseId == houseId && shift.AssignedRoom.Id == roomId && shift.StartDate > startingAfter)
+                .Include(shift => shift.Checklist)
+                .ToListAsync(cancellationToken);
+
         // Checklist items and reports (with their votes) are deleted by cascade
         public Task RemoveRangeAsync(IReadOnlyCollection<Shift> shifts, CancellationToken cancellationToken = default)
         {

@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace CoinquiLindo.Shared.Contracts
 {
@@ -10,7 +10,8 @@ namespace CoinquiLindo.Shared.Contracts
         ShiftDueSoon = 2,
         ReportCreated = 3,
         ReportVoted = 4,
-        ShiftHelperChosen = 5
+        ShiftHelperChosen = 5,
+        CleaningTasksChanged = 6
     }
 
     public record NotificationResponse(
